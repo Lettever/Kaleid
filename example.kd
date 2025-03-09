@@ -1,0 +1,44 @@
+builting type = int, float, bool, string, any, type
+type variableName = initialValue;
+
+range
+x = 0..10
+0 <= x && x < 10
+y = 1..=13
+0 <= y && y <= 13
+
+array = [type]
+empty
+	[Int] foo = []
+	auto foo = [Int]()
+aa/dictionary/hashmap = [keyType: ValueType]
+empty
+	auto foo = [Int: Int]()
+	[Int: Int] foo = [:]
+
+function
+returnType(arg1Type arg1Name, arg2Type arg2Name, ...) functionName {
+	body
+}
+aka QuakeC-style function
+
+extension/new methods for existing types
+returnType(arg1Type arg1Name, arg2Type arg2Name, ...) type.extensionName {
+	body
+}
+
+if statements as values
+mut int a = 10
+bool b = true
+a += if b { 3 } else { 5 }
+a == 13
+
+struct name(type1 name1, type2 name2, ...) {
+	returnType staticFunction(arg1Type arg1Name, arg2Type arg2Name, ...) {
+		body
+	}
+	returnType methodName(self, arg1Type, arg1Name, ...) {
+		body
+	}
+}
+
