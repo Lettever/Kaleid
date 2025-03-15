@@ -1,10 +1,10 @@
+*
 !.gitignore
 !example.kd
 !justfile
 !LICENSE
 
-!./src/lexer.cpp
-!./src/parser.cpp
-
-*
+!src
+!src/lexer.cpp
+!src/parser.cpp
 
