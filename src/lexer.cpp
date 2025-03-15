@@ -1,6 +1,12 @@
 #include <iostream>
 #include <optional>
 #include <ctype.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <functional>
+#include <cassert>
+
+#define sanity_check assert
 
 enum class TokenType {
     // Identifiers and Keywords
@@ -16,17 +22,17 @@ enum class TokenType {
     // Operators
     Dot,
     And,
-    Or,
+    AndAnd,
+    OrOr,
     Bang,
     Equals,
-    EqualsEquals,       // ==
-    NotEquals,          // !=
+    EqualsEquals,
+    NotEquals,
     LessThan,
     GreaterThan,
     LessThanOrEquals,
     GreaterThanOrEquals,
 
-    Assign,
     Plus,
     PlusEquals,
     Minus,
@@ -37,7 +43,7 @@ enum class TokenType {
     DivideEquals,
 
     Range,
-    InclusiveRange,      // ..=
+    InclusiveRange,
 
     // Punctuation
     L_Paren,
@@ -59,8 +65,59 @@ struct Token {
 	Token(const std::string& span, TokenType type): span(span), type(type) {}
 };
 
+std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, TokenType> map) {
+	std::unordered_set<char> uniqueChars;
+
+    for (const auto& pair : map) {
+        const std::string& key = pair.first;
+		for (char ch : key) {
+            uniqueChars.insert(ch);
+        }
+    }
+
+    return uniqueChars;
+}
+
+size_t advanceWhile(std::string_view str, size_t i, const std::function<bool(char)>& fn) {
+	size_t len = str.size();
+	while (i < len && fn(str[i])) i += 1;
+	return i;
+}
+
 class Lexer {
 public:
+	const std::unordered_map<std::string, TokenType> tokenMap = {
+		{ ".", TokenType::Dot },
+		{ "&", TokenType::And },
+		{ "&&", TokenType::AndAnd},
+		{ "||", TokenType::OrOr },
+		{ "!", TokenType::Bang },
+		{ "=", TokenType::Equals },
+		{ "==", TokenType::EqualsEquals },
+		{ "!=", TokenType::NotEquals },
+		{ "<", TokenType::LessThan },
+		{ ">", TokenType::GreaterThan },
+		{ "<=", TokenType::LessThanOrEquals },
+		{ ">=", TokenType::GreaterThanOrEquals },
+		{ "+", TokenType::Plus },
+		{ "+=", TokenType::PlusEquals },
+		{ "-", TokenType::Minus },
+		{ "-=", TokenType::MinusEquals },
+		{ "*", TokenType::Times },
+		{ "*=", TokenType::TimesEquals },
+		{ "/", TokenType::Divide },
+		{ "/=", TokenType::DivideEquals },
+		{ "..", TokenType::Range },
+		{ "..=", TokenType::InclusiveRange },
+		{ "(", TokenType::L_Paren },
+		{ ")", TokenType::R_Paren },
+		{ "{", TokenType::L_Brace },
+		{ "}", TokenType::R_Brace },
+		{ "[", TokenType::L_Bracket },
+		{ "]", TokenType::R_Bracket },
+		{ ";", TokenType::Semicolon },
+    };
+    const std::unordered_set<char> uniqueChars = getUniqueCharsFromKeys(tokenMap);
 	std::string source;
 	size_t i;
 	std::optional<char> peek(size_t a) {
@@ -72,127 +129,93 @@ public:
 		return Token(span, type);
 	}
 	
-	std::optional<Token> handleMultiCharOp(std::string_view op, char expectedChar, TokenType singleType, TokenType multiType) {
-		char nextCh = this->peek(1).value_or('\0');
-        if (nextCh == expectedChar) {
-            return makeAndAdvance(std::string(op) + expectedChar, multiType);
-        }
-        return makeAndAdvance(std::string(op), singleType);
-	}
-	
 	std::optional<Token> lexLineComment() {
 		std::cout << "TODO! " << __func__ << "\n";
+		std::cout << source[i] << "\n\n";
+		i += 1;
 		return this->next();
 	}
 	
 	std::optional<Token> lexMultiLineComment() {
 		std::cout << "TODO! " << __func__ << "\n";
+		std::cout << source[i] << "\n\n";
+		i += 1;
 		return this->next();
 	}
 	
 	std::optional<Token> lexNumber() {
 		std::cout << "TODO! " << __func__ << "\n";
+		std::cout << source[i] << "\n\n";
+		i += 1;
 		return this->next();
+		// size_t start = i;
+		// while (i < source.length() && isdigit(source[i])) {
+		// 	i++;
+		// }
+		// std::string number = source.substr(start, i - start);
+		// return Token(number, TokenType::Number);
 	}
 	
 	std::optional<Token> lexAlpha() {
 		std::cout << "TODO! " << __func__ << "\n";
+		std::cout << source[i] << "\n\n";
+		i += 1;
 		return this->next();
 	}
 	
 	std::optional<Token> lexWhite() {
 		std::cout << "TODO! " << __func__ << "\n";
+		std::cout << source[i] << "\n\n";
+		i += 1;
+		return this->next();
+	}
+	
+	std::optional<Token> lexOperator() {
+		std::cout << "TODO! " << __func__ << "\n";
+		std::cout << source[i] << "\n\n";
+		i += 1;
 		return this->next();
 	}
 	
 	std::optional<Token> next() {
-		if (i >= source.length()) return std::nullopt;
+		if (i >= source.length()) return Token("", TokenType::Eof);;
 		char ch = source[i];
-		if (ch == '+') {
-			// +, +=
-			return handleMultiCharOp("+", '=', TokenType::Plus, TokenType::PlusEquals);
-		} else if (ch == '-') {
-			// -, -=
-			return handleMultiCharOp("-", '=', TokenType::Minus, TokenType::MinusEquals);
-		} else if (ch == '*') {
-			// *, *=
-			return handleMultiCharOp("*", '=', TokenType::Times, TokenType::TimesEquals);
-		} else if (ch == '/') {
-			// /, /= //, /*
-			char nextCh = this->peek(1).value_or('\0');
-			if (nextCh == '/') return lexLineComment();
-			if(nextCh == '*') return lexMultiLineComment();
-			return handleMultiCharOp("/", '=', TokenType::Divide, TokenType::DivideEquals);
-		} else if (ch == '&') {
-			// &&
-			char nextCh = this->peek(1).value_or('\0');
-			if (nextCh != '&') return makeAndAdvance("&" + nextCh, TokenType::Unknown);
-			return makeAndAdvance("&&", TokenType::And);
-		} else if (ch == '|') {
-			char nextCh = this->peek(1).value_or('\0');
-			if (nextCh != '|') return makeAndAdvance("&" + nextCh, TokenType::Unknown);
-			return makeAndAdvance("||", TokenType::Or);
-			// ||
-		} else if (ch == '!') {
-			// !, !=
-			return handleMultiCharOp("!", '=', TokenType::Bang, TokenType::NotEquals);
-		} else if (ch == '.') {
-			// ., .., ..=
-			char nextCh1 = this->peek(1).value_or('\0');
-			if (nextCh1 != '.') return makeAndAdvance(".", TokenType::Dot);
-			char nextCh2 = this->peek(2).value_or('\0');
-			if (nextCh2 != '=') return makeAndAdvance("..", TokenType::Range);
-			return makeAndAdvance("..=", TokenType::InclusiveRange);
-		} else  if (ch == '=') {
-			//=, ==
-			return handleMultiCharOp("=", '=', TokenType::Equals, TokenType::EqualsEquals);
-		} else if (ch == '<') {
-			// <, <=
-			return handleMultiCharOp("<", '=', TokenType::LessThan, TokenType::LessThanOrEquals);
-		} else if (ch == '>') {
-			// >, >=
-			return handleMultiCharOp(">", '=', TokenType::GreaterThan, TokenType::GreaterThanOrEquals);
-		} else if (ch == '(') {
-			return makeAndAdvance("(", TokenType::L_Paren);
-		} else if (ch == ')') {
-			return makeAndAdvance(")", TokenType::R_Paren);
-		} else if (ch == '{') {
-			return makeAndAdvance("{", TokenType::L_Brace);
-		} else if (ch == '}') {
-			return makeAndAdvance("}", TokenType::R_Brace);
-		} else if (ch == '[') {
-			return makeAndAdvance("[", TokenType::L_Bracket);
-		} else if (ch == ']') {
-			return makeAndAdvance("]", TokenType::R_Bracket);
-		} else if (ch == ';') {
-			return makeAndAdvance(";", TokenType::Semicolon);
-		} else if (isdigit(ch)) {
-			return lexNumber();
-		} else if (isalpha(ch)) {
-			return lexAlpha();
-		} else if (iswhite(ch)) {
-			return lexWhite();
-		}
-		return Token("", TokenType::Eof);
+		char nextCh = this->peek(1).value_or('\0');
+		
+		if (ch == '/' && nextCh == '/') return lexLineComment();
+		else if (ch == '/' && nextCh == '*') return lexMultiLineComment();
+		else if (isdigit(ch)) return lexNumber();
+		else if (isalpha(ch)) return lexAlpha();
+		else if (isspace(ch)) return lexWhite();
+		else if (uniqueChars.count(ch)) return lexOperator();
+		else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
 	}
-//public:
-	Lexer(const std::string& input): source(input), i(0) { }
 	
+	Lexer(const std::string& input): source(input), i(0) { }
 };
 
-struct Person {
-	int age;
-	std::string name;
-	static void hello() {
-		std::cout << "Hello form Person\n";
+std::ostream& operator<<(std::ostream& os, const Token& t) {
+	std::cout << t.span << " ";
+	switch(t.type) {
+	case TokenType::Semicolon:
+	os << "TokenType::Semicolon";
+	break;
+	case TokenType::R_Bracket:
+	os << "R_Bracket";
+	break;
+	case TokenType::L_Bracket:
+	os << "TokenType::L_Bracket";
+	break;
+	default:
+	break;
 	}
-};
-
-std::ostream& operator<<(std::ostream& os, const Person& p) {
-	os << "Name: " << p.name << ", Age: " << p.age;
 	return os;
 }
 
 int main() {
-	
+	auto a = Lexer("123!!=//*../*=foo| |").next().value();
+    std::cout << a << "\n";
+    // std::cout << map.at("foo") << "\n"; "at" throws an exception if the key does not exists
+    // indexing normally returns a default value
+    
 }
