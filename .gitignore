@@ -4,3 +4,4 @@
 !justfile
 !LICENSE
 !src/lexer.cpp
+!src/parser.cpp
