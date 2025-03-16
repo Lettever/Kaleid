@@ -78,7 +78,7 @@ std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, 
 
 size_t advanceWhile(std::string_view str, size_t i, const std::function<bool(char)>& fn) {
 	size_t len = str.size();
-	while (i < len && fn(str[i])) i += 1;
+	while ((i < len) && fn(str[i])) i += 1;
 	return i;
 }
 
@@ -144,16 +144,12 @@ public:
 	}
 
 	std::optional<Token> lexNumber() {
-		std::cout << "TODO! " << __func__ << "\n";
-		std::cout << source[i] << "\n\n";
-		i += 1;
-		return this->next();
-		// size_t start = i;
-		// while (i < source.length() && isdigit(source[i])) {
-		// 	i++;
-		// }
-		// std::string number = source.substr(start, i - start);
-		// return Token(number, TokenType::Number);
+		size_t j = advanceWhile(source, i, isdigit);
+		char nextCh = this->peek(j - i).value_or('\0');
+		if (nextCh != '.') return makeAndAdvance(source.substr(i, j - i), TokenType::Integer);
+		size_t k = advanceWhile(source, j + 1, isdigit);
+		if (j + 1 == k) return std::nullopt; // There are no numbers after the dot
+		return makeAndAdvance(source.substr(i, k - i), TokenType::Float);
 	}
 
 	std::optional<Token> lexAlpha() {
@@ -164,9 +160,8 @@ public:
 	}
 	
 	std::optional<Token> lexWhite() {
-		std::cout << "TODO! " << __func__ << "\n";
-		std::cout << source[i] << "\n\n";
-		i += 1;
+		//std::cout << __func__ << "\n";
+		i = advanceWhile(source, i, isspace);
 		return this->next();
 	}
 
@@ -206,6 +201,12 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 	case TokenType::L_Bracket:
 	os << "TokenType::L_Bracket";
 	break;
+	case TokenType::Integer:
+	os << "TokenType::Integer";
+	break;
+	case TokenType::Float:
+	os << "TokenType::Float";
+	break;
 	default:
 	break;
 	}
@@ -213,8 +214,13 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 }
 
 int main() {
-	auto a = Lexer("123!!=//*../*=foo| |").next().value();
-    std::cout << a << "\n";
+	auto l = Lexer("123.345 2341111 4.");
+	std::optional<Token> t = l.next();
+	while (t.has_value() && t.value().type != TokenType::Eof) {
+		std::cout << t.value() << "\n";
+		t = l.next();
+	}
+	
     // std::cout << map.at("foo") << "\n"; "at" throws an exception if the key does not exists
     // indexing normally returns a default value
     return 0;
