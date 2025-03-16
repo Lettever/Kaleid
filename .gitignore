@@ -2,8 +2,8 @@
 
 !.gitignore
 !example.kd
-!justfile
 !LICENSE
+!makefile
 
 !src
 !src/lexer.cpp
