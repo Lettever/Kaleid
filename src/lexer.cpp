@@ -6,8 +6,6 @@
 #include <functional>
 #include <cassert>
 
-#define sanity_check assert
-
 enum class TokenType {
     // Identifiers and Keywords
     Identifier,
@@ -40,6 +38,7 @@ enum class TokenType {
     TimesEquals,
 	Divide,
 	DivideEquals,
+	LeftArrow,
 	Range,
 	InclusiveRange,
 
@@ -82,6 +81,16 @@ size_t advanceWhile(std::string_view str, size_t i, const std::function<bool(cha
 	return i;
 }
 
+bool isKeyword(std::string_view identifier) {
+	static const std::unordered_set<std::string_view> keywords = {
+		"if", "while", "for", "else",
+		"struct", "trait", "fn", "break",
+		"continue", "return", "match",
+		"use", "module", "assert",
+	};
+	return keywords.count(identifier) > 0;
+}
+
 class Lexer {
 public:
 	const std::unordered_map<std::string, TokenType> tokenMap = {
@@ -105,6 +114,7 @@ public:
 		{ "*=", TokenType::TimesEquals },
 		{ "/", TokenType::Divide },
 		{ "/=", TokenType::DivideEquals },
+		{ "->", TokenType::LeftArrow },
 		{ "..", TokenType::Range },
 		{ "..=", TokenType::InclusiveRange },
 		{ "(", TokenType::L_Paren },
@@ -142,7 +152,7 @@ public:
 		i += 1;
 		return this->next();
 	}
-
+	
 	std::optional<Token> lexNumber() {
 		size_t j = advanceWhile(source, i, isdigit);
 		char nextCh = this->peek(j - i).value_or('\0');
@@ -152,9 +162,11 @@ public:
 		return makeAndAdvance(source.substr(i, k - i), TokenType::Float);
 	}
 
-	Token lexIdentifier() {
+	Token lexAlpha() {
 		size_t j = advanceWhile(source, i, [](char ch){ return isalnum(ch) || (ch == '_'); });
-		return makeAndAdvance(source.substr(i, j - i), TokenType::Identifier);
+		std::string lexedString = source.substr(i, j - i);
+		TokenType type = isKeyword(lexedString) ? TokenType::Keyword : TokenType::Identifier;
+		return makeAndAdvance(lexedString, type);
 	}
 	
 	std::optional<Token> lexWhite() {
@@ -178,7 +190,7 @@ public:
 		if (ch == '/' && nextCh == '/') return lexLineComment();
 		else if (ch == '/' && nextCh == '*') return lexMultiLineComment();
 		else if (isdigit(ch)) return lexNumber();
-		else if (isalpha(ch) || ch == '_') return lexIdentifier();
+		else if (isalpha(ch) || ch == '_') return lexAlpha();
 		else if (isspace(ch)) return lexWhite();
 		else if (uniqueChars.count(ch)) return lexOperator();
 		else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
@@ -196,13 +208,14 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 	case TokenType::Integer: os << "TokenType::Integer"; break;
 	case TokenType::Float: os << "TokenType::Float"; break;
 	case TokenType::Identifier: os << "TokenType::Identifier"; break;
+	case TokenType::Keyword: os << "TokenType::Keyword"; break;
 	default: os << "TODO " << static_cast<int>(t.type); break;
 	}
 	return os;
 }
 
 int main() {
-	auto l = Lexer("123.345 2341111 4.1 anc qwe_q1 _nasd098");
+	auto l = Lexer("123.345 2341111 4.1 anc qwe_q1 _nasd098 if for while");
 	std::optional<Token> t = l.next();
 	while (t.has_value() && t.value().type != TokenType::Eof) {
 		std::cout << t.value() << "\n";
