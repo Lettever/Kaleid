@@ -124,7 +124,7 @@ public:
 		return source[i + a];
 	}
 
-	std::optional<Token> makeAndAdvance(const std::string& span, TokenType type) {
+	Token makeAndAdvance(const std::string& span, TokenType type) {
 		i += span.length();
 		return Token(span, type);
 	}
@@ -152,11 +152,9 @@ public:
 		return makeAndAdvance(source.substr(i, k - i), TokenType::Float);
 	}
 
-	std::optional<Token> lexAlpha() {
-		std::cout << "TODO! " << __func__ << "\n";
-		std::cout << source[i] << "\n\n";
-		i += 1;
-		return this->next();
+	Token lexIdentifier() {
+		size_t j = advanceWhile(source, i, [](char ch){ return isalnum(ch) || (ch == '_'); });
+		return makeAndAdvance(source.substr(i, j - i), TokenType::Identifier);
 	}
 	
 	std::optional<Token> lexWhite() {
@@ -180,7 +178,7 @@ public:
 		if (ch == '/' && nextCh == '/') return lexLineComment();
 		else if (ch == '/' && nextCh == '*') return lexMultiLineComment();
 		else if (isdigit(ch)) return lexNumber();
-		else if (isalpha(ch)) return lexAlpha();
+		else if (isalpha(ch) || ch == '_') return lexIdentifier();
 		else if (isspace(ch)) return lexWhite();
 		else if (uniqueChars.count(ch)) return lexOperator();
 		else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
@@ -192,29 +190,19 @@ public:
 std::ostream& operator<<(std::ostream& os, const Token& t) {
 	std::cout << t.span << " ";
 	switch(t.type) {
-	case TokenType::Semicolon:
-	os << "TokenType::Semicolon";
-	break;
-	case TokenType::R_Bracket:
-	os << "R_Bracket";
-	break;
-	case TokenType::L_Bracket:
-	os << "TokenType::L_Bracket";
-	break;
-	case TokenType::Integer:
-	os << "TokenType::Integer";
-	break;
-	case TokenType::Float:
-	os << "TokenType::Float";
-	break;
-	default:
-	break;
+	case TokenType::Semicolon: os << "TokenType::Semicolon"; break;
+	case TokenType::R_Bracket: os << "R_Bracket"; break;
+	case TokenType::L_Bracket: os << "TokenType::L_Bracket"; break;
+	case TokenType::Integer: os << "TokenType::Integer"; break;
+	case TokenType::Float: os << "TokenType::Float"; break;
+	case TokenType::Identifier: os << "TokenType::Identifier"; break;
+	default: os << "TODO " << static_cast<int>(t.type); break;
 	}
 	return os;
 }
 
 int main() {
-	auto l = Lexer("123.345 2341111 4.");
+	auto l = Lexer("123.345 2341111 4.1 anc qwe_q1 _nasd098");
 	std::optional<Token> t = l.next();
 	while (t.has_value() && t.value().type != TokenType::Eof) {
 		std::cout << t.value() << "\n";
