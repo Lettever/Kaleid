@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -g
+CXXFLAGS = -Wall -Wextra -g
 
 # Final executable
 TARGET = out
