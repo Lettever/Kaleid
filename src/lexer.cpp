@@ -125,24 +125,22 @@ public:
 		{ "]", TokenType::R_Bracket },
 		{ ";", TokenType::Semicolon },
     };
-    const std::unordered_set<char> uniqueChars = getUniqueCharsFromKeys(tokenMap);
+    const std::unordered_set<char> operatorChars = getUniqueCharsFromKeys(tokenMap);
 	std::string source;
 	size_t i;
 
-	std::optional<char> peek(size_t a) {
-		if (i + a >= source.length()) return std::nullopt;
-		return source[i + a];
+	std::optional<char> peek(size_t n) {
+		if (i + n >= source.length()) return std::nullopt;
+		return source[i + n];
 	}
 
 	Token makeAndAdvance(const std::string& span, TokenType type) {
 		i += span.length();
 		return Token(span, type);
 	}
-
+	
 	std::optional<Token> lexLineComment() {
-		std::cout << "TODO! " << __func__ << "\n";
-		std::cout << source[i] << "\n\n";
-		i += 1;
+		i = advanceWhile(source, i, [](char ch) { return ch != '\n'; });
 		return this->next();
 	}
 
@@ -170,7 +168,6 @@ public:
 	}
 	
 	std::optional<Token> lexWhite() {
-		//std::cout << __func__ << "\n";
 		i = advanceWhile(source, i, isspace);
 		return this->next();
 	}
@@ -186,13 +183,13 @@ public:
 		if (i >= source.length()) return Token("", TokenType::Eof);;
 		char ch = source[i];
 		char nextCh = this->peek(1).value_or('\0');
-		
+
 		if (ch == '/' && nextCh == '/') return lexLineComment();
 		else if (ch == '/' && nextCh == '*') return lexMultiLineComment();
 		else if (isdigit(ch)) return lexNumber();
 		else if (isalpha(ch) || ch == '_') return lexAlpha();
 		else if (isspace(ch)) return lexWhite();
-		else if (uniqueChars.count(ch)) return lexOperator();
+		else if (operatorChars.count(ch)) return lexOperator();
 		else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
 	}
 
@@ -215,7 +212,7 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 }
 
 int main() {
-	auto l = Lexer("123.345 2341111 4.1 anc qwe_q1 _nasd098 if for while");
+	auto l = Lexer("123.345 2341111 4.1 anc qwe_q1 //_nasd098 if\n for while");
 	std::optional<Token> t = l.next();
 	while (t.has_value() && t.value().type != TokenType::Eof) {
 		std::cout << t.value() << "\n";
