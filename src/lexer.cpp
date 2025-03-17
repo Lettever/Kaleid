@@ -218,7 +218,6 @@ int main() {
 		std::cout << t.value() << "\n";
 		t = l.next();
 	}
-	
     // std::cout << map.at("foo") << "\n"; "at" throws an exception if the key does not exists
     // indexing normally returns a default value
     return 0;

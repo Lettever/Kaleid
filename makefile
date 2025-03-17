@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -g
+CXXFLAGS = -Wall -Wextra -g -std=c++20 -fmodules-ts
 
 # Final executable
 TARGET = out
