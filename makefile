@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -g -std=c++20 -fmodules-ts
+CXXFLAGS = -Wall -Wextra -g -std=c++20
 
 # Final executable
 TARGET = out
@@ -8,6 +8,7 @@ TARGET = out
 # Source directory and files
 SRC_DIR = src
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+# SRCS = $(SRC_DIR)/parser.cpp $(SRC_DIR)/lexer.cpp $(SRC_DIR)/vm.cpp
 
 # Build directory for object files
 OBJ_DIR = $(SRC_DIR)/build
