@@ -258,7 +258,7 @@ public:
 		else if (isdigit(ch)) return lexNumber();
 		else if (isalpha(ch) || ch == '_') return lexAlpha();
 		else if (isspace(ch)) return lexWhite();
-		else if (operatorChars.count(ch)) return lexOperator();
+		else if (operatorChars.contains(ch)) return lexOperator();
 		else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
 	}
 
