@@ -1,6 +1,7 @@
 #include <iostream>
 #include <optional>
 #include <ctype.h>
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
@@ -172,28 +173,21 @@ public:
 	
 	std::optional<Token> lexSpecialNumber() {
 		char nextCh = tolower(this->peek(1).value_or('\0'));
-		if (nextCh == 'x') {
-			size_t j = advanceWhile(source, i + 2, isHex);
-			std::string str = source.substr(i, j - i);
-			if (i + 2 == j) return makeAndAdvance(str, TokenType::Unknown);
-			return makeAndAdvance(str, TokenType::SpecialNumber);
+		static const std::map<char, std::function<bool(int)>> mp = {
+			{ 'x', isHex },
+			{ 'o', isOctal },
+			{ 'b', isBinary },
+		};
+		
+		if (!mp.contains(nextCh)) {
+			return makeAndAdvance("0", TokenType::Integer);
 		}
-		if (nextCh == 'o') {
-			size_t j = advanceWhile(source, i + 2, isOctal);
-			std::string str = source.substr(i, j - i);
-			if (i + 2 == j) return makeAndAdvance(str, TokenType::Unknown);
-			return makeAndAdvance(str, TokenType::SpecialNumber);
-		}
-		if (nextCh == 'b') {
-			size_t j = advanceWhile(source, i + 2, isBinary);
-			std::string str = source.substr(i, j - i);
-			if (i + 2 == j) return makeAndAdvance(str, TokenType::Unknown);
-			return makeAndAdvance(str, TokenType::SpecialNumber);
-		}
-		return makeAndAdvance("0", TokenType::Integer);
+		
+		size_t j = advanceWhile(source, i + 2, mp.at(nextCh));
+		std::string str = source.substr(i, j - i);
+		if (i + 2 == j) return makeAndAdvance(str, TokenType::Unknown);
+		return makeAndAdvance(str, TokenType::SpecialNumber);
 	}
-	
-	// \d+(.\d+)?(e-?\d+)
 	
 	bool shouldLexSpecialNumber() {
 		char nextCh = this->peek(1).value_or('\0');
@@ -299,37 +293,6 @@ int main() {
 	}
 	
     // std::cout << map.at("foo") << "\n"; "at" throws an exception if the key does not exists
-    // indexing normally returns a default value	
+    // indexing normally returns a default value
     return 0;
 }
-
-/*
-private Nullable!string parseNumber() {
-        if (str[i] == '0' && str.getC(i + 1, '\0') != '.') {
-            return parseSpecialNumber();
-        }
-        
-        uint j = parseIntegerPart(i);
-        if (str.getC(j, '\0') == '.') {
-            if (!str.getC(j + 1, '\0').isDigit()) return Nullable!string.init;
-            j = parseDecimalPart(j);
-        }
-        if (str.getC(j, '\0').toLower() == 'e') {
-            dchar c = str.getC(j + 1, '\0');
-            if (!c.isDigit() && c != '-' && c != '+') return Nullable!string.init;
-            j = parseExponentPart(j);
-        }
-        return nullable(str[i .. j]);
-    }
-
-    private uint parseIntegerPart(uint i) {
-        return advanceWhile(str, i + 1, &isDigit);
-    }
-    private uint parseDecimalPart(uint i) {
-        return advanceWhile(str, i + 1, &isDigit);
-    }
-    private uint parseExponentPart(uint i) {
-        if (str[i + 1] == '+' || str[i + 1] == '-') i += 1;
-        return advanceWhile(str, i + 1, &isDigit);
-    }
-*/
