@@ -1,0 +1,5 @@
+- Finish lexer
+  - Finish lexMultiLineComment
+  - Finish lexOperator
+- Implement parser
+- Implement vm
