@@ -4,6 +4,7 @@
 !example.kd
 !LICENSE
 !makefile
+!todo.md
 
 !src
 !src/lexer.cpp
