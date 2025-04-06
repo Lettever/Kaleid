@@ -144,10 +144,7 @@ public:
 	std::string source;
 	size_t i;
 
-	std::optional<char> peek(size_t n) {
-		if (i + n >= source.length()) return std::nullopt;
-		return source[i + n];
-	}
+	std::optional<char> peek(size_t n);
 	
 	std::optional<char> absolutePeek(size_t j) {
 		if (j >= source.length()) return std::nullopt;
@@ -165,8 +162,14 @@ public:
 	}
 
 	std::optional<Token> lexMultiLineComment() {
-		std::cout << "TODO! " << __func__ << "\n";
-		std::cout << source[i] << "\n\n";
+		int level = 1;
+		i += 2;
+		while (i < source.length() && (level != 0)) {
+			char nextCh = this->peek(1).value_or('\0');
+			if (source[i] == '*' && nextCh == '/') level -= 1;
+			else if (source[i] == '/' && nextCh == '*') level += 1;
+			i += 1;
+		}
 		i += 1;
 		return this->next();
 	}
@@ -312,8 +315,8 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 }
 
 int main() {
-	//auto l = Lexer("123.345 2341111 4.1 anc qwe_q1 //_nasd098 if\n for while");
-	auto l = Lexer("123 456 789.012 1.23e4 1.23e+1 7.16e-6 7.16e- 10e3 0x123 0X1FF 0Xq 0b11112 0B2 0O08");
+	//auto l = Lexer("123 456 789.012 1.23e4 1.23e+1 7.16e-6 7.16e- 10e3 0x123 0X1FF 0Xq 0b11112 0B2 0O08");
+	auto l = Lexer("hi /*helo*//+ /* abc /*q*/w*/");
 	std::optional<Token> t = l.next();
 	while (t.has_value() && t.value().type != TokenType::Eof) {
 		std::cout << t.value() << "\n";
