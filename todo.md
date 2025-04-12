@@ -1,6 +1,4 @@
 - Finish lexer
-  - Finish lexMultiLineComment
-  - Test lexMultiLineComment
   - Finish lexOperator
 - Implement parser
 - Implement vm
