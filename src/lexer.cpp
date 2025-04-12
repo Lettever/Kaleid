@@ -106,6 +106,11 @@ bool isBinary(char ch) {
     return ch >= '0' && ch <= '1';
 }
 
+std::vector<std::unordered_map<std::string, TokenType>> abc(std::unordered_map<std::string, TokenType> tokenMap) {
+	std::vector<std::unordered_map<std::string, TokenType>> maps;
+	return maps;
+}
+
 class Lexer {
 public:
 	const std::unordered_map<std::string, TokenType> tokenMap = {
@@ -141,133 +146,144 @@ public:
 		{ ";", TokenType::Semicolon },
     };
     const std::unordered_set<char> operatorChars = getUniqueCharsFromKeys(tokenMap);
+    const std::vector<std::unordered_map<std::string, TokenType>> sortedOperators = abc(tokenMap);
 	std::string source;
 	size_t i;
 
 	std::optional<char> peek(size_t n);
-	
-	std::optional<char> absolutePeek(size_t j) {
-		if (j >= source.length()) return std::nullopt;
-		return source[j];
-	}
-	
-	Token makeAndAdvance(const std::string& span, TokenType type) {
-		i += span.length();
-		return Token(span, type);
-	}
-	
-	std::optional<Token> lexLineComment() {
-		i = advanceWhile(source, i, [](char ch) { return ch != '\n'; });
-		return this->next();
-	}
-
-	std::optional<Token> lexMultiLineComment() {
-		int level = 1;
-		i += 2;
-		while (i < source.length() && (level != 0)) {
-			char nextCh = this->peek(1).value_or('\0');
-			if (source[i] == '*' && nextCh == '/') level -= 1;
-			else if (source[i] == '/' && nextCh == '*') level += 1;
-			i += 1;
-		}
-		i += 1;
-		return this->next();
-	}
-	
-	std::optional<Token> lexSpecialNumber() {
-		char nextCh = tolower(this->peek(1).value_or('\0'));
-		static const std::map<char, std::function<bool(int)>> mp = {
-			{ 'x', isHex },
-			{ 'o', isOctal },
-			{ 'b', isBinary },
-		};
-		
-		if (!mp.contains(nextCh)) {
-			return makeAndAdvance("0", TokenType::Integer);
-		}
-		
-		size_t j = advanceWhile(source, i + 2, mp.at(nextCh));
-		std::string str = source.substr(i, j - i);
-		if (i + 2 == j) return makeAndAdvance(str, TokenType::Unknown);
-		return makeAndAdvance(str, TokenType::SpecialNumber);
-	}
-	
-	bool shouldLexSpecialNumber() {
-		char nextCh = this->peek(1).value_or('\0');
-		return source[i] == '0' && (nextCh != '.');
-	}
-	
-	std::optional<Token> lexNumber() {
-		if (shouldLexSpecialNumber()) return lexSpecialNumber();
-		bool isFloat = false;
-		size_t j = advanceWhile(source, i, isdigit); //get integer part
-		char nextCh = this->absolutePeek(j).value_or('\0');
-		if (nextCh == '.') {
-			isFloat = true;
-			j += 1;
-			if (!isdigit(this->absolutePeek(j).value_or('\0'))) {
-				return makeAndAdvance(source.substr(i, j - i), TokenType::Unknown);
-			}
-			j = advanceWhile(source, j, isdigit); // get decimal numbers
-		}
-		nextCh = this->absolutePeek(j).value_or('\0');
-		if (nextCh == 'e' || nextCh == 'E') {
-			isFloat = true;
-			j += 1;
-			char ch = this->absolutePeek(j).value_or('\0');
-			if (ch == '-' || ch == '+') j += 1;
-			if (!isdigit(this->absolutePeek(j).value_or('\0'))) {
-				return makeAndAdvance(source.substr(i, j - i), TokenType::Unknown);
-			}
-			j = advanceWhile(source, j, isdigit);
-		}
-		
-		std::string str = source.substr(i, j - i);
-		if (isFloat) return makeAndAdvance(str, TokenType::Float);
-		return makeAndAdvance(str, TokenType::Integer);
-		
-		//if (nextCh != '.') return makeAndAdvance(source.substr(i, j - i), TokenType::Integer);
-		//a = advanceWhile(source, j + 1, isdigit);
-		//if (j + 1 == k) return std::nullopt; // There are no numbers after the dot
-		//return makeAndAdvance(source.substr(i, k - i), TokenType::Float);
-	}
-
-	Token lexAlpha() {
-		size_t j = advanceWhile(source, i, [](char ch){ return isalnum(ch) || (ch == '_'); });
-		std::string lexedString = source.substr(i, j - i);
-		TokenType type = isKeyword(lexedString) ? TokenType::Keyword : TokenType::Identifier;
-		return makeAndAdvance(lexedString, type);
-	}
-	
-	std::optional<Token> lexWhite() {
-		i = advanceWhile(source, i, isspace);
-		return this->next();
-	}
-
-	std::optional<Token> lexOperator() {
-		std::cout << "TODO! " << __func__ << "\n";
-		std::cout << source[i] << "\n\n";
-		i += 1;
-		return this->next();
-	}
-	
-	std::optional<Token> next() {
-		if (i >= source.length()) return Token("", TokenType::Eof);;
-		char ch = source[i];
-		char nextCh = this->peek(1).value_or('\0');
-
-		if (ch == '/' && nextCh == '/') return lexLineComment();
-		else if (ch == '/' && nextCh == '*') return lexMultiLineComment();
-		else if (isdigit(ch)) return lexNumber();
-		else if (isalpha(ch) || ch == '_') return lexAlpha();
-		else if (isspace(ch)) return lexWhite();
-		else if (operatorChars.contains(ch)) return lexOperator();
-		else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
-	}
-
+	std::optional<char> absolutePeek(size_t j);
+	Token makeAndAdvance(const std::string& span, TokenType type);
+	std::optional<Token> lexLineComment();
+	std::optional<Token> lexMultiLineComment();
+	std::optional<Token> lexSpecialNumber();
+	bool shouldLexSpecialNumber();
+	std::optional<Token> lexNumber();
+	Token lexAlpha();
+	std::optional<Token> lexWhite();
+	std::optional<Token> lexOperator();
+	std::optional<Token> next();
 	Lexer(const std::string& input): source(input), i(0) { }
 };
 
+std::optional<char> Lexer::peek(size_t n) {
+	if (i + n >= source.length()) return std::nullopt;
+	return source[i + n];
+}
+
+std::optional<char> Lexer::absolutePeek(size_t j) {
+	if (j >= source.length()) return std::nullopt;
+	return source[j];
+}
+
+Token Lexer::makeAndAdvance(const std::string& span, TokenType type) {
+	i += span.length();
+	return Token(span, type);
+}
+
+std::optional<Token> Lexer::lexLineComment() {
+	i = advanceWhile(source, i, [](char ch) { return ch != '\n'; });
+	return this->next();
+}
+
+std::optional<Token> Lexer::lexMultiLineComment() {
+	int level = 1;
+	i += 2;
+	while (i < source.length() && (level != 0)) {
+		char nextCh = this->peek(1).value_or('\0');
+		if (source[i] == '*' && nextCh == '/') level -= 1;
+		else if (source[i] == '/' && nextCh == '*') level += 1;
+		i += 1;
+	}
+	i += 1;
+	return this->next();
+}
+
+std::optional<Token> Lexer::lexSpecialNumber() {
+	char nextCh = tolower(this->peek(1).value_or('\0'));
+	static const std::map<char, std::function<bool(int)>> mp = {
+		{ 'x', isHex },
+		{ 'o', isOctal },
+		{ 'b', isBinary },
+	};
+	
+	if (!mp.contains(nextCh)) {
+		return makeAndAdvance("0", TokenType::Integer);
+	}
+	
+	size_t j = advanceWhile(source, i + 2, mp.at(nextCh));
+	std::string str = source.substr(i, j - i);
+	if (i + 2 == j) return makeAndAdvance(str, TokenType::Unknown);
+	return makeAndAdvance(str, TokenType::SpecialNumber);
+}
+
+bool Lexer::shouldLexSpecialNumber() {
+	char nextCh = this->peek(1).value_or('\0');
+	return source[i] == '0' && (nextCh != '.');
+}
+	
+std::optional<Token> Lexer::lexNumber() {
+	if (shouldLexSpecialNumber()) return lexSpecialNumber();
+	bool isFloat = false;
+	size_t j = advanceWhile(source, i, isdigit); //get integer part
+	char nextCh = this->absolutePeek(j).value_or('\0');
+	if (nextCh == '.') {
+		isFloat = true;
+		j += 1;
+		if (!isdigit(this->absolutePeek(j).value_or('\0'))) {
+			return makeAndAdvance(source.substr(i, j - i), TokenType::Unknown);
+		}
+		j = advanceWhile(source, j, isdigit); // get decimal numbers
+	}
+	nextCh = this->absolutePeek(j).value_or('\0');
+	if (nextCh == 'e' || nextCh == 'E') {
+		isFloat = true;
+		j += 1;
+		char ch = this->absolutePeek(j).value_or('\0');
+		if (ch == '-' || ch == '+') j += 1;
+		if (!isdigit(this->absolutePeek(j).value_or('\0'))) {
+			return makeAndAdvance(source.substr(i, j - i), TokenType::Unknown);
+		}
+		j = advanceWhile(source, j, isdigit);
+	}
+	
+	std::string str = source.substr(i, j - i);
+	if (isFloat) return makeAndAdvance(str, TokenType::Float);
+	return makeAndAdvance(str, TokenType::Integer);
+}
+
+Token Lexer::lexAlpha() {
+	size_t j = advanceWhile(source, i, [](char ch){ return isalnum(ch) || (ch == '_'); });
+	std::string lexedString = source.substr(i, j - i);
+	TokenType type = isKeyword(lexedString) ? TokenType::Keyword : TokenType::Identifier;
+	return makeAndAdvance(lexedString, type);
+}
+
+std::optional<Token> Lexer::lexWhite() {
+	i = advanceWhile(source, i, isspace);
+	return this->next();
+}
+
+std::optional<Token> Lexer::lexOperator() {
+	std::cout << "TODO! " << __func__ << "\n";
+	std::cout << source[i] << "\n\n";
+	i += 1;
+	return this->next();
+}
+
+std::optional<Token> Lexer::next() {
+	if (i >= source.length()) return Token("", TokenType::Eof);;
+	char ch = source[i];
+	char nextCh = this->peek(1).value_or('\0');
+
+	if (ch == '/' && nextCh == '/') return lexLineComment();
+	else if (ch == '/' && nextCh == '*') return lexMultiLineComment();
+	else if (isdigit(ch)) return lexNumber();
+	else if (isalpha(ch) || ch == '_') return lexAlpha();
+	else if (isspace(ch)) return lexWhite();
+	else if (operatorChars.contains(ch)) return lexOperator();
+	else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
+}
+	
 std::ostream& operator<<(std::ostream& os, const Token& t) {
 	std::cout << t.span << " ";
 	switch(t.type) {
