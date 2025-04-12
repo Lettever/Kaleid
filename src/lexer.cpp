@@ -331,7 +331,6 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 }
 
 int main() {
-	std::cout << "hi\n";
 	//auto l = Lexer("123 456 789.012 1.23e4 1.23e+1 7.16e-6 7.16e- 10e3 0x123 0X1FF 0Xq 0b11112 0B2 0O08");
 	auto l = Lexer("hi /*helo*//+ /* abc /*q*/w*/");
 	std::optional<Token> t = l.next();
