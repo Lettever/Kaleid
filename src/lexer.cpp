@@ -63,6 +63,56 @@ struct Token {
 	Token(const std::string& span, TokenType type): span(span), type(type) {}
 };
 
+std::ostream& operator<<(std::ostream& os, const TokenType& t) {
+	switch(t) {
+    case TokenType::Identifier: os << "TokenType::Identifier"; break;
+    case TokenType::Keyword: os << "TokenType::Keyword"; break;
+    case TokenType::Integer: os << "TokenType::Integer"; break;
+    case TokenType::Float: os << "TokenType::Float"; break;
+    case TokenType::SpecialNumber: os << "TokenType::SpecialNumber"; break;
+    case TokenType::String: os << "TokenType::String"; break;
+    case TokenType::Dot: os << "TokenType::Dot"; break;
+    case TokenType::And: os << "TokenType::And"; break;
+    case TokenType::AndAnd: os << "TokenType::AndAnd"; break;
+    case TokenType::OrOr: os << "TokenType::OrOr"; break;
+    case TokenType::Bang: os << "TokenType::Bang"; break;
+    case TokenType::Equals: os << "TokenType::Equals"; break;
+    case TokenType::EqualsEquals: os << "TokenType::EqualsEquals"; break;
+    case TokenType::NotEquals: os << "TokenType::NotEquals"; break;
+    case TokenType::LessThan: os << "TokenType::LessThan"; break;
+    case TokenType::GreaterThan: os << "TokenType::GreaterThan"; break;
+    case TokenType::LessThanOrEquals: os << "TokenType::LessThanOrEquals"; break;
+    case TokenType::GreaterThanOrEquals: os << "TokenType::GreaterThanOrEquals"; break;
+    case TokenType::Plus: os << "TokenType::Plus"; break;
+    case TokenType::PlusEquals: os << "TokenType::PlusEquals"; break;
+    case TokenType::Minus: os << "TokenType::Minus"; break;
+    case TokenType::MinusEquals: os << "TokenType::MinusEquals"; break;
+    case TokenType::Times: os << "TokenType::Times"; break;
+    case TokenType::TimesEquals: os << "TokenType::TimesEquals"; break;
+	case TokenType::Divide: os << "TokenType::Divide"; break;
+	case TokenType::DivideEquals: os << "TokenType::DivideEquals"; break;
+	case TokenType::LeftArrow: os << "TokenType::LeftArrow"; break;
+	case TokenType::Range: os << "TokenType::Range"; break;
+	case TokenType::InclusiveRange: os << "TokenType::InclusiveRange"; break;
+	case TokenType::L_Paren: os << "TokenType::L_Paren"; break;
+	case TokenType::R_Paren: os << "TokenType::R_Paren"; break;
+	case TokenType::L_Brace: os << "TokenType::L_Brace"; break;
+	case TokenType::R_Brace: os << "TokenType::R_Brace"; break;
+	case TokenType::L_Bracket: os << "TokenType::L_Bracket"; break;
+	case TokenType::R_Bracket: os << "TokenType::R_Bracket"; break;
+	case TokenType::Semicolon: os << "TokenType::Semicolon"; break;
+	case TokenType::Unknown: os << "TokenType::Unknown"; break;
+	case TokenType::Eof: os << "TokenType::Eof"; break;
+	default: os << "TODO " << static_cast<int>(t) << __LINE__; break;
+	}
+	return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Token& t) {
+	std::cout << t.span << " " << t.type;
+	return os;
+}
+
 std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, TokenType> map) {
 	std::unordered_set<char> uniqueChars;
 
@@ -74,6 +124,19 @@ std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, 
     }
 
     return uniqueChars;
+}
+
+template<typename Key, typename Value>
+std::vector<Key> getKeys(const std::unordered_map<Key, Value>& inputMap) {
+    std::vector<Key> keys;
+    keys.reserve(inputMap.size()); // Pre-allocate memory for efficiency
+    
+    // Extract keys using range-based for loop
+    for (const auto& [key, value] : inputMap) {
+        keys.push_back(key);
+    }
+    
+    return keys;
 }
 
 size_t advanceWhile(std::string_view str, size_t i, const std::function<bool(char)>& fn) {
@@ -106,9 +169,25 @@ bool isBinary(char ch) {
     return ch >= '0' && ch <= '1';
 }
 
-std::vector<std::unordered_map<std::string, TokenType>> abc(std::unordered_map<std::string, TokenType> tokenMap) {
-	std::vector<std::unordered_map<std::string, TokenType>> maps;
-	return maps;
+size_t getLargestOperatorSize(const std::vector<std::string>& operators) {
+	size_t maxSize = 0;
+	
+	for (const auto& op : operators) {
+        maxSize = std::max(maxSize, op.size());
+    }
+    
+    return maxSize;
+}
+        
+std::vector<std::unordered_map<std::string, TokenType>> groupOperatorsByDecreasingSize(std::unordered_map<std::string, TokenType> tokenMap) {
+	size_t maxSize = getLargestOperatorSize(getKeys(tokenMap));
+	std::vector<std::unordered_map<std::string, TokenType>> res(maxSize);
+	
+	for (const auto& [k, v] : tokenMap) {
+        res[maxSize - k.size()].emplace(k, v);
+    }
+	
+	return res;
 }
 
 class Lexer {
@@ -146,7 +225,7 @@ public:
 		{ ";", TokenType::Semicolon },
     };
     const std::unordered_set<char> operatorChars = getUniqueCharsFromKeys(tokenMap);
-    const std::vector<std::unordered_map<std::string, TokenType>> sortedOperators = abc(tokenMap);
+    const std::vector<std::unordered_map<std::string, TokenType>> sortedOperators = groupOperatorsByDecreasingSize(tokenMap);
 	std::string source;
 	size_t i;
 
@@ -162,7 +241,16 @@ public:
 	std::optional<Token> lexWhite();
 	std::optional<Token> lexOperator();
 	std::optional<Token> next();
-	Lexer(const std::string& input): source(input), i(0) { }
+	Lexer(const std::string& input): source(input), i(0) {
+		for (const auto& group : sortedOperators) {
+			if (!group.empty()) {
+				std::cout << "Operators of size " << group.begin()->first.size() << ":\n";
+				for (const auto& [op, type] : group) {
+					std::cout << "  " << op << "\n";
+				}
+			}
+		}
+	}
 };
 
 std::optional<char> Lexer::peek(size_t n) {
@@ -283,55 +371,8 @@ std::optional<Token> Lexer::next() {
 	else if (operatorChars.contains(ch)) return lexOperator();
 	else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
 }
-	
-std::ostream& operator<<(std::ostream& os, const Token& t) {
-	std::cout << t.span << " ";
-	switch(t.type) {
-    case TokenType::Identifier: os << "TokenType::Identifier"; break;
-    case TokenType::Keyword: os << "TokenType::Keyword"; break;
-    case TokenType::Integer: os << "TokenType::Integer"; break;
-    case TokenType::Float: os << "TokenType::Float"; break;
-    case TokenType::SpecialNumber: os << "TokenType::SpecialNumber"; break;
-    case TokenType::String: os << "TokenType::String"; break;
-    case TokenType::Dot: os << "TokenType::Dot"; break;
-    case TokenType::And: os << "TokenType::And"; break;
-    case TokenType::AndAnd: os << "TokenType::AndAnd"; break;
-    case TokenType::OrOr: os << "TokenType::OrOr"; break;
-    case TokenType::Bang: os << "TokenType::Bang"; break;
-    case TokenType::Equals: os << "TokenType::Equals"; break;
-    case TokenType::EqualsEquals: os << "TokenType::EqualsEquals"; break;
-    case TokenType::NotEquals: os << "TokenType::NotEquals"; break;
-    case TokenType::LessThan: os << "TokenType::LessThan"; break;
-    case TokenType::GreaterThan: os << "TokenType::GreaterThan"; break;
-    case TokenType::LessThanOrEquals: os << "TokenType::LessThanOrEquals"; break;
-    case TokenType::GreaterThanOrEquals: os << "TokenType::GreaterThanOrEquals"; break;
-    case TokenType::Plus: os << "TokenType::Plus"; break;
-    case TokenType::PlusEquals: os << "TokenType::PlusEquals"; break;
-    case TokenType::Minus: os << "TokenType::Minus"; break;
-    case TokenType::MinusEquals: os << "TokenType::MinusEquals"; break;
-    case TokenType::Times: os << "TokenType::Times"; break;
-    case TokenType::TimesEquals: os << "TokenType::TimesEquals"; break;
-	case TokenType::Divide: os << "TokenType::Divide"; break;
-	case TokenType::DivideEquals: os << "TokenType::DivideEquals"; break;
-	case TokenType::LeftArrow: os << "TokenType::LeftArrow"; break;
-	case TokenType::Range: os << "TokenType::Range"; break;
-	case TokenType::InclusiveRange: os << "TokenType::InclusiveRange"; break;
-	case TokenType::L_Paren: os << "TokenType::L_Paren"; break;
-	case TokenType::R_Paren: os << "TokenType::R_Paren"; break;
-	case TokenType::L_Brace: os << "TokenType::L_Brace"; break;
-	case TokenType::R_Brace: os << "TokenType::R_Brace"; break;
-	case TokenType::L_Bracket: os << "TokenType::L_Bracket"; break;
-	case TokenType::R_Bracket: os << "TokenType::R_Bracket"; break;
-	case TokenType::Semicolon: os << "TokenType::Semicolon"; break;
-	case TokenType::Unknown: os << "TokenType::Unknown"; break;
-	case TokenType::Eof: os << "TokenType::Eof"; break;
-	default: os << "TODO " << static_cast<int>(t.type) << __LINE__; break;
-	}
-	return os;
-}
 
 int main() {
-	std::cout << "hi\n";
 	//auto l = Lexer("123 456 789.012 1.23e4 1.23e+1 7.16e-6 7.16e- 10e3 0x123 0X1FF 0Xq 0b11112 0B2 0O08");
 	auto l = Lexer("hi /*helo*//+ /* abc /*q*/w*/");
 	std::optional<Token> t = l.next();
