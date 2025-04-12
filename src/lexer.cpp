@@ -241,16 +241,7 @@ public:
 	std::optional<Token> lexWhite();
 	std::optional<Token> lexOperator();
 	std::optional<Token> next();
-	Lexer(const std::string& input): source(input), i(0) {
-		for (const auto& group : sortedOperators) {
-			if (!group.empty()) {
-				std::cout << "Operators of size " << group.begin()->first.size() << ":\n";
-				for (const auto& [op, type] : group) {
-					std::cout << "  " << op << "\n";
-				}
-			}
-		}
-	}
+	Lexer(const std::string& input): source(input), i(0) { };
 };
 
 std::optional<char> Lexer::peek(size_t n) {
