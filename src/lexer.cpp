@@ -116,9 +116,8 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, TokenType> map) {
 	std::unordered_set<char> uniqueChars;
 
-    for (const auto& pair : map) {
-        const std::string& key = pair.first;
-		for (char ch : key) {
+    for (const auto& [key, _] : map) {
+        for (char ch : key) {
             uniqueChars.insert(ch);
         }
     }
@@ -126,9 +125,9 @@ std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, 
     return uniqueChars;
 }
 
-template<typename Key, typename Value>
-std::vector<Key> getKeys(const std::unordered_map<Key, Value>& inputMap) {
-    std::vector<Key> keys;
+template<typename K, typename V>
+std::vector<K> getKeys(const std::unordered_map<K, V>& inputMap) {
+    std::vector<K> keys;
     keys.reserve(inputMap.size()); // Pre-allocate memory for efficiency
     
     // Extract keys using range-based for loop
@@ -171,22 +170,19 @@ bool isBinary(char ch) {
 
 size_t getLargestOperatorSize(const std::vector<std::string>& operators) {
 	size_t maxSize = 0;
-	
 	for (const auto& op : operators) {
         maxSize = std::max(maxSize, op.size());
     }
-    
     return maxSize;
 }
         
-std::vector<std::unordered_map<std::string, TokenType>> groupOperatorsByDecreasingSize(std::unordered_map<std::string, TokenType> tokenMap) {
+std::vector<std::unordered_map<std::string, TokenType>>
+groupOperatorsByDecreasingSize(std::unordered_map<std::string, TokenType> tokenMap) {
 	size_t maxSize = getLargestOperatorSize(getKeys(tokenMap));
 	std::vector<std::unordered_map<std::string, TokenType>> res(maxSize);
-	
 	for (const auto& [k, v] : tokenMap) {
         res[maxSize - k.size()].emplace(k, v);
     }
-	
 	return res;
 }
 
@@ -343,10 +339,11 @@ std::optional<Token> Lexer::lexWhite() {
 }
 
 std::optional<Token> Lexer::lexOperator() {
-	std::cout << "TODO! " << __func__ << "\n";
-	std::cout << source[i] << "\n\n";
-	i += 1;
-	return this->next();
+	// keeps consuming character until it is no longer valid
+	std::string op;
+	op.append(source[i]);
+	
+	return makeAndAdvance(op, tokenMap.at(op));
 }
 
 std::optional<Token> Lexer::next() {
