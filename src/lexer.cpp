@@ -240,6 +240,7 @@ public:
 	Token lexOperator();
 	std::optional<Token> next();
 	bool isOperator(std::string_view view);
+	bool isOperator(char ch);
 	Lexer(const std::string& input): source(input), i(0) { };
 };
 
