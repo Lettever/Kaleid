@@ -355,6 +355,10 @@ bool Lexer::isOperator(std::string_view view) {
     return tokenMap.contains(view);
 }
 
+bool Lexer::isOperator(char ch) {
+    return operatorChars.contains(ch);
+}
+
     //return true;
 std::optional<Token> Lexer::next() {
 	if (i >= source.length()) return Token("", TokenType::Eof);;
@@ -366,7 +370,7 @@ std::optional<Token> Lexer::next() {
 	else if (isdigit(ch)) return lexNumber();
 	else if (isalpha(ch) || ch == '_') return lexAlpha();
 	else if (isspace(ch)) return lexWhite();
-	else if (operatorChars.contains(ch)) return lexOperator();
+	else if (isOperator(ch)) return lexOperator();
 	else return makeAndAdvance(std::string(1, ch), TokenType::Unknown);
 }
 
