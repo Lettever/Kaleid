@@ -6,6 +6,8 @@
 #include <unordered_set>
 #include <functional>
 #include <cassert>
+#include <string>
+#include <string_view>
 
 enum class TokenType {
     // Identifiers and Keywords
@@ -113,7 +115,7 @@ std::ostream& operator<<(std::ostream& os, const Token& t) {
 	return os;
 }
 
-std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string, TokenType> map) {
+std::unordered_set<char> getUniqueCharsFromKeys(std::unordered_map<std::string_view, TokenType> map) {
 	std::unordered_set<char> uniqueChars;
 
     for (const auto& [key, _] : map) {
@@ -168,7 +170,7 @@ bool isBinary(char ch) {
     return ch >= '0' && ch <= '1';
 }
 
-size_t getLargestOperatorSize(const std::vector<std::string>& operators) {
+size_t getLargestOperatorSize(const std::vector<std::string_view>& operators) {
 	size_t maxSize = 0;
 	for (const auto& op : operators) {
         maxSize = std::max(maxSize, op.size());
@@ -177,7 +179,7 @@ size_t getLargestOperatorSize(const std::vector<std::string>& operators) {
 }
         
 std::vector<std::unordered_map<std::string, TokenType>>
-groupOperatorsByDecreasingSize(std::unordered_map<std::string, TokenType> tokenMap) {
+groupOperatorsByDecreasingSize(std::unordered_map<std::string_view, TokenType> tokenMap) {
 	size_t maxSize = getLargestOperatorSize(getKeys(tokenMap));
 	std::vector<std::unordered_map<std::string, TokenType>> res(maxSize);
 	for (const auto& [k, v] : tokenMap) {
@@ -188,7 +190,7 @@ groupOperatorsByDecreasingSize(std::unordered_map<std::string, TokenType> tokenM
 
 class Lexer {
 public:
-	const std::unordered_map<std::string, TokenType> tokenMap = {
+	const std::unordered_map<std::string_view, TokenType> tokenMap = {
 		{ ".", TokenType::Dot },
 		{ "&", TokenType::And },
 		{ "&&", TokenType::AndAnd},
@@ -235,8 +237,9 @@ public:
 	std::optional<Token> lexNumber();
 	Token lexAlpha();
 	std::optional<Token> lexWhite();
-	std::optional<Token> lexOperator();
+	Token lexOperator();
 	std::optional<Token> next();
+	bool isOperator(std::string_view view);
 	Lexer(const std::string& input): source(input), i(0) { };
 };
 
@@ -338,14 +341,20 @@ std::optional<Token> Lexer::lexWhite() {
 	return this->next();
 }
 
-std::optional<Token> Lexer::lexOperator() {
-	// keeps consuming character until it is no longer valid
-	std::string op;
-	op.append(source[i]);
-	
+Token Lexer::lexOperator() {
+	size_t len = 1;
+	while (isOperator(source.substr(i, len + 1))) {
+        len += 1;
+	}
+	std::string op = source.substr(i, len);
 	return makeAndAdvance(op, tokenMap.at(op));
 }
 
+bool Lexer::isOperator(std::string_view view) {
+    return tokenMap.contains(view);
+}
+
+    //return true;
 std::optional<Token> Lexer::next() {
 	if (i >= source.length()) return Token("", TokenType::Eof);;
 	char ch = source[i];
@@ -362,7 +371,7 @@ std::optional<Token> Lexer::next() {
 
 int main() {
 	//auto l = Lexer("123 456 789.012 1.23e4 1.23e+1 7.16e-6 7.16e- 10e3 0x123 0X1FF 0Xq 0b11112 0B2 0O08");
-	auto l = Lexer("hi /*helo*//+ /* abc /*q*/w*/");
+	auto l = Lexer("hi /*helo*//=+......= /* abc /*q*/w*/");
 	std::optional<Token> t = l.next();
 	while (t.has_value() && t.value().type != TokenType::Eof) {
 		std::cout << t.value() << "\n";

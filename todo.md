@@ -1,4 +1,4 @@
 - Finish lexer
-  - Finish lexOperator
+  - Test lexOperator
 - Implement parser
 - Implement vm
