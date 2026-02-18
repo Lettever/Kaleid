@@ -1,7 +1,7 @@
-import src/[lexer, parser, token]
+import src/[lexer, token]
 
-let tokens = block:
-    var lexer = Lexer.new(readFile("src/example.kd"))
-    lexer.collect()
-    
-echo tokens
+let program = readFile("src/example.kd")
+echo program
+let tokens = lex(program)
+for t in tokens:
+    echo t

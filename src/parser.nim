@@ -68,7 +68,7 @@ proc parseAdd(p: var Parser): ASTNode =
     
     return left
     
-proc parse*(p: var Parser): ASTNode =
+proc parse(p: var Parser): ASTNode =
     if p.i >= len(p.tokens):
         p.error("Unexpected end of input")
         return nil
@@ -83,6 +83,10 @@ proc parse*(p: var Parser): ASTNode =
     
     if len(p.errors) > 0:
         result = nil
+
+proc parse*(program: string): ASTNode =
+    var p = Parser.new(lex(program))
+    return parse(p)
 
 proc dumpAST*(node: ASTNode, indent: int = 0) =
     let prefix = repeat("  ", indent)
@@ -101,7 +105,7 @@ proc dumpAST*(node: ASTNode, indent: int = 0) =
         echo prefix & "Empty"
 
 # Evaluate the AST and compute the result
-proc evaluate*(node: ASTNode): int =
+proc evaluate(node: ASTNode): int =
     case node.kind
     of Number:
         result = node.numValue
@@ -120,9 +124,6 @@ proc evaluate*(node: ASTNode): int =
         result = 0
 
 when isMainModule:
-    var l = Lexer.new(readFile("src/example.kd"))
-    let tokens = l.collect()
-    var p: Parser = Parser.new(tokens)
-    let node = p.parse()
+    let node = parse(readFile("src/example.kd"))
     dumpAST(node)    
     echo evaluate(node)

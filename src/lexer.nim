@@ -3,11 +3,11 @@ import lexerposition; export advance
 import parseutils, strutils
 
 type
-    Lexer* = object
+    Lexer = object
         src: string
-        pos*: LexerPosition
+        pos: LexerPosition
 
-proc new*(T: type Lexer, src: string): Lexer =
+proc new(T: type Lexer, src: string): Lexer =
     return Lexer(
         src: src,
         pos: LexerPosition.default() 
@@ -47,9 +47,13 @@ proc nextToken(l: var Lexer): Token =
     elif ch == '+':
         return l.makeAndAdvance(Plus, "+")
 
-proc collect*(l: var Lexer): seq[Token] =
+proc collect(l: var Lexer): seq[Token] =
     result = newSeq[Token]()
     var t = l.nextToken()
     while t.kind != Eof:
         result &= t
         t = l.nextToken()
+
+proc lex*(s: string): seq[Token] = 
+    var l = Lexer.new(s)
+    return l.collect()

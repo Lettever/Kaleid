@@ -1,5 +1,5 @@
-import ast, token
-import std/strformat
+import ast, token, parser
+import std/[strformat]
 
 #codegen for qbe
 
@@ -18,14 +18,16 @@ proc newTemp(qg: var QBEGen): string =
 proc emit(qg: var QBEGen, line: string) =
     qg.output &= line & "\n"
     
-proc error(qg: var QBEGen: message: string) = 
+proc error(qg: var QBEGen, message: string) = 
     qg.errors &= message
     
 proc generateNumber(qg: var QBEGen, node: ASTNode): string = 
     result = qg.newTemp()
     qg.emit(&"  {result} =w copy {node.numValue}")
     
-proc generateBinOp(qg: var QBEGen, node: ASTNode): string =
+proc generate*(qg: var QBEGen, node: ASTNode): string
+
+proc generateBinaryOp(qg: var QBEGen, node: ASTNode): string =
     let leftTemp = qg.generate(node.left)
     let rightTemp = qg.generate(node.right)
     
@@ -50,15 +52,23 @@ proc generate*(qg: var QBEGen, node: ASTNode): string =
         qg.error("Cannot generate code for empty node")
         result = "%0"
 
-proc generateProgram*(qg: QBEGen, ast: ASTNode): string =
-    qb.output = ""
+proc generateProgram*(qg: var QBEGen, ast: ASTNode): string =
+    qg.output = ""
     qg.emit("export function w $main() {")
     qg.emit("@start")
     
-    let result = qg.generate(ast)
-    
-    qg.emit(&"  ret {result}")
+    let res = qg.generate(ast)
+    qg.emit(&"  call $printf(l $fmt, ..., w {res})")
+    qg.emit("  ret")
+
     qg.emit("}")
+    qg.emit("")
+    qg.emit("data $fmt = { b \"Result = %d\\n\\0\" }")
     
     return qg.output
 
+when isMainModule:
+    let node = parse(readFile("src/example.kd"))
+    var qg = QBEGen.new()
+    let output = generateProgram(qg, node)
+    writeFile("out.qbe", output)
