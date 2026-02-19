@@ -1,5 +1,5 @@
 import ast, token, parser
-import std/[strformat]
+import std/[strformat, paths]
 
 #codegen for qbe
 
@@ -36,6 +36,8 @@ proc generateBinaryOp(qg: var QBEGen, node: ASTNode): string =
     case node.op
     of Plus:
         qg.emit(&"  {result} =w add {leftTemp}, {rightTemp}")
+    of Minus:
+        qg.emit(&"  {result} =w sub {leftTemp}, {rightTemp}")
     else:
         qg.error(&"Unsupported operator: {node.op}")
         result = leftTemp
@@ -68,7 +70,16 @@ proc generateProgram*(qg: var QBEGen, ast: ASTNode): string =
     return qg.output
 
 when isMainModule:
-    let node = parse(readFile("src/example.kd"))
-    var qg = QBEGen.new()
-    let output = generateProgram(qg, node)
-    writeFile("out.qbe", output)
+    let files = @["simple.kd", "minus.kd", "minus-plus.kd"]
+    
+    for file in files:
+        let filepath = "examples/" & file
+        let outpath = $Path("out/" & file).changeFileExt("qbe")
+        echo filepath
+        echo outpath
+        var qg = QBEGen.new()
+        let node = parse(readFile(filepath))
+        let output = qg.generateProgram(node)
+        writeFile(outpath, output)
+        echo output
+        echo ""

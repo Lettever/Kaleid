@@ -2,7 +2,8 @@ import lexerposition
 
 type
     TokenType* = enum
-        Plus, Number, Error, Eof
+        Plus, Number, Minus
+        Error, Eof
 
     Token* = object
         kind*: TokenType

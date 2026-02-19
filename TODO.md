@@ -1,1 +1,1 @@
-- Test everything, specially src/codegen.nim
+- Add more operators

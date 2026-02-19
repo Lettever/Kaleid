@@ -2,10 +2,9 @@ import token; export TokenType
 import lexerposition; export advance
 import parseutils, strutils
 
-type
-    Lexer = object
-        src: string
-        pos: LexerPosition
+type Lexer = object
+    src: string
+    pos: LexerPosition
 
 proc new(T: type Lexer, src: string): Lexer =
     return Lexer(
@@ -46,6 +45,9 @@ proc nextToken(l: var Lexer): Token =
         return l.readNumber()
     elif ch == '+':
         return l.makeAndAdvance(Plus, "+")
+    elif ch == '-':
+        return l.makeAndAdvance(Minus, "-")
+    return l.makeAndAdvance(Error, ch & "")
 
 proc collect(l: var Lexer): seq[Token] =
     result = newSeq[Token]()
@@ -57,3 +59,13 @@ proc collect(l: var Lexer): seq[Token] =
 proc lex*(s: string): seq[Token] = 
     var l = Lexer.new(s)
     return l.collect()
+
+when isMainModule:
+    let files = @["simple.kd", "minus.kd", "minus-plus.kd"]
+    
+    for file in files:
+        let filepath = "examples/" & file
+        echo filepath
+        for t in lex(readFile(filepath)):
+            echo t
+        echo ""

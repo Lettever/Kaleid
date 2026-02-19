@@ -40,7 +40,7 @@ proc parseNumber(p: var Parser): ASTNode =
     if not p.check(Number):
         p.error("Expected Number")
         return nil
-        
+    
     let value = p.tokens[p.i].lexeme.parseInt()
     result = ASTNode(
         kind: Number,
@@ -53,7 +53,8 @@ proc parseAdd(p: var Parser): ASTNode =
     if left == nil:
         return nil
     
-    while p.check(Plus):
+    while p.check(Plus) or p.check(Minus):
+        let op = p.peek()
         p.advance()
         let right = p.parseNumber()
         if right == nil:
@@ -63,7 +64,7 @@ proc parseAdd(p: var Parser): ASTNode =
             kind: BinaryOp,
             left: left,
             right: right,
-            op: Plus
+            op: op
         )
     
     return left
@@ -82,6 +83,7 @@ proc parse(p: var Parser): ASTNode =
         result = nil
     
     if len(p.errors) > 0:
+        echo p.errors
         result = nil
 
 proc parse*(program: string): ASTNode =
@@ -90,6 +92,9 @@ proc parse*(program: string): ASTNode =
 
 proc dumpAST*(node: ASTNode, indent: int = 0) =
     let prefix = repeat("  ", indent)
+    if node == nil:
+        echo prefix & "nil"
+        return
     
     case node.kind
     of Number:
@@ -97,6 +102,7 @@ proc dumpAST*(node: ASTNode, indent: int = 0) =
     of BinaryOp:
         let opStr = case node.op
                     of Plus: "+"
+                    of Minus: "-"
                     else: "unknown"
         echo prefix & "BinaryOp (" & opStr & ")"
         dumpAST(node.left, indent + 1)
@@ -104,7 +110,6 @@ proc dumpAST*(node: ASTNode, indent: int = 0) =
     of Empty:
         echo prefix & "Empty"
 
-# Evaluate the AST and compute the result
 proc evaluate(node: ASTNode): int =
     case node.kind
     of Number:
@@ -116,14 +121,21 @@ proc evaluate(node: ASTNode): int =
         case node.op
         of Plus: 
             result = leftVal + rightVal
+        of Minus:
+            result = leftVal - rightVal
         else:
             # Should not happen with valid AST
             result = 0
-    
     of Empty:
         result = 0
 
 when isMainModule:
-    let node = parse(readFile("src/example.kd"))
-    dumpAST(node)    
-    echo evaluate(node)
+    let files = @["simple.kd", "minus.kd", "minus-plus.kd"]
+    
+    for file in files:
+        let filepath = "examples/" & file
+        echo filepath
+        let node = parse(readFile(filepath))
+        dumpAST(node)
+        echo evaluate(node)
+        echo ""
