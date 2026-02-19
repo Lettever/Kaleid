@@ -83,7 +83,7 @@ when isMainModule:
     
     for file in files:
         let filepath = "examples/" & file
-        let outpath = $Path("out/" & file).changeFileExt("qbe")
+        let outpath = $Path("out-qbe/" & file).changeFileExt("qbe")
         echo filepath
         echo outpath
         var qg = QBEGen.new()

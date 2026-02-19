@@ -1,0 +1,12 @@
+export function w $main() {
+@start
+  %t0 =w copy 9872
+  %t1 =w copy 1239
+  %t2 =w sub %t0, %t1
+  %t3 =w copy 2
+  %t4 =w sub %t2, %t3
+  call $printf(l $fmt, ..., w %t4)
+  ret
+}
+
+data $fmt = { b "Result = %d\n\0" }
