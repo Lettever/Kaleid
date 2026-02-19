@@ -36,16 +36,40 @@ proc expect(p: var Parser, tt: TokenType, message: string): bool =
         p.error(message)
         return false
 
-proc parseNumber(p: var Parser): ASTNode =
-    if not p.check(Number):
-        p.error("Expected Number")
+proc parseUnary(p: var Parser): ASTNode =
+    if not p.check(Minus):
+        p.error("Only a minus sign is supported for unary operations")
         return nil
-    
+    let op = p.peek()
+    p.advance()
     let value = p.tokens[p.i].lexeme.parseInt()
     result = ASTNode(
-        kind: Number,
-        numValue: value
+        kind: UnaryOp,
+        unaryOp: op,
+        value: ASTNode(
+            kind: Number,
+            numValue: value
+        )
     )
+    p.advance()
+
+proc parseNumber(p: var Parser): ASTNode =
+    if p.check(Minus):
+        let op = p.peek()
+        p.advance()
+        
+        let value = p.parseNumber()
+        if value == nil:
+            return nil
+        
+        return newUnaryNode(value, op)
+    
+    if not p.check(Number):
+        p.error("Expected number")
+        return nil
+        
+    let value = p.tokens[p.i].lexeme.parseInt()
+    result = newNumberNode(value)
     p.advance()
 
 proc parseAdd(p: var Parser): ASTNode =
@@ -56,17 +80,12 @@ proc parseAdd(p: var Parser): ASTNode =
     while p.check(Plus) or p.check(Minus):
         let op = p.peek()
         p.advance()
+        
         let right = p.parseNumber()
         if right == nil:
             return nil
         
-        left = ASTNode(
-            kind: BinaryOp,
-            left: left,
-            right: right,
-            op: op
-        )
-    
+        left = newBinaryNode(left, right, op)
     return left
     
 proc parse(p: var Parser): ASTNode =
@@ -99,8 +118,14 @@ proc dumpAST*(node: ASTNode, indent: int = 0) =
     case node.kind
     of Number:
         echo prefix & "Number: " & $node.numValue
+    of UnaryOp:
+        let opStr = case node.unaryOp
+                    of Minus: "-"
+                    else: "unknown"
+        echo prefix & "UnaryOp (" & opStr & ")"
+        dumpAST(node.value, indent + 1)
     of BinaryOp:
-        let opStr = case node.op
+        let opStr = case node.binaryOp
                     of Plus: "+"
                     of Minus: "-"
                     else: "unknown"
@@ -114,18 +139,23 @@ proc evaluate(node: ASTNode): int =
     case node.kind
     of Number:
         result = node.numValue
-    
     of BinaryOp:
         let leftVal = evaluate(node.left)
         let rightVal = evaluate(node.right)
-        case node.op
-        of Plus: 
+        case node.binaryOp
+        of Plus:
             result = leftVal + rightVal
         of Minus:
             result = leftVal - rightVal
         else:
             # Should not happen with valid AST
             result = 0
+    of UnaryOp:
+        if node.unaryOp == Minus:
+            result = -evaluate(node)
+        else:
+            echo &"{node.unaryOp} is not supported"
+            result = evaluate(node)
     of Empty:
         result = 0
 

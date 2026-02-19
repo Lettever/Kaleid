@@ -27,27 +27,36 @@ proc generateNumber(qg: var QBEGen, node: ASTNode): string =
     
 proc generate*(qg: var QBEGen, node: ASTNode): string
 
+proc generateUnaryOp(qg: var QBEGen, node: ASTNode): string =
+    case node.unaryOp
+    of Minus:
+        let operand = qg.generate(node.value)
+        result = qg.newTemp()
+        qg.emit(&"  {result} =w neg {operand}")
+    else:
+        qg.error("Cannot generate code for empty node")
+        result = "%0" 
+    
 proc generateBinaryOp(qg: var QBEGen, node: ASTNode): string =
     let leftTemp = qg.generate(node.left)
     let rightTemp = qg.generate(node.right)
-    
     result = qg.newTemp()
     
-    case node.op
+    case node.binaryOp
     of Plus:
         qg.emit(&"  {result} =w add {leftTemp}, {rightTemp}")
     of Minus:
         qg.emit(&"  {result} =w sub {leftTemp}, {rightTemp}")
     else:
-        qg.error(&"Unsupported operator: {node.op}")
+        qg.error(&"Unsupported operator: {node.binaryOp}")
         result = leftTemp
-    
-    return result
 
 proc generate*(qg: var QBEGen, node: ASTNode): string =
     case node.kind
     of Number:
         result = qg.generateNumber(node)
+    of UnaryOp:
+        result = qg.generateUnaryOp(node)
     of BinaryOp:
         result = qg.generateBinaryOp(node)
     of Empty:
@@ -70,7 +79,7 @@ proc generateProgram*(qg: var QBEGen, ast: ASTNode): string =
     return qg.output
 
 when isMainModule:
-    let files = @["simple.kd", "minus.kd", "minus-plus.kd"]
+    let files = @["simple.kd", "minus.kd", "minus-plus.kd", "negative.kd", "negative2.kd", "negative3.kd"]
     
     for file in files:
         let filepath = "examples/" & file
