@@ -2,7 +2,7 @@ import lexerposition
 
 type
     TokenType* = enum
-        Plus, Star, Number, Minus, Slash
+        Plus, Star, Number, Minus, Slash, Semicolon
         Error, Eof
 
     Token* = object

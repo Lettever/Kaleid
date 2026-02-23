@@ -5,7 +5,7 @@ export function w $main() {
   %t2 =w copy 10
   %t3 =w add %t1, %t2
   call $printf(l $fmt, ..., w %t3)
-  ret
+  ret 0
 }
 
 data $fmt = { b "Result = %d\n\0" }

@@ -5,7 +5,7 @@ export function w $main() {
   %t2 =w neg %t1
   %t3 =w sub %t0, %t2
   call $printf(l $fmt, ..., w %t3)
-  ret
+  ret 0
 }
 
 data $fmt = { b "Result = %d\n\0" }

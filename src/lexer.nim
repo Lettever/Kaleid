@@ -56,6 +56,8 @@ proc nextToken(l: var Lexer): Token =
         return l.makeAndAdvance(Star, "*")
     elif ch == '/':
         return l.makeAndAdvance(Slash, "/")
+    elif ch == ';':
+        return l.makeAndAdvance(Semicolon, ";")
     return l.makeAndAdvance(Error, makeErrorMessage(l, &"{ch}"))
 
 proc collect(l: var Lexer): seq[Token] =

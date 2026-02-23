@@ -36,25 +36,6 @@ proc expect(p: var Parser, tt: TokenType, message: string): bool =
         p.error(message)
         return false
 
-#[
-proc parseUnary(p: var Parser): ASTNode =
-    if not p.check(Minus):
-        p.error("Only a minus sign is supported for unary operations")
-        return nil
-    let op = p.peek()
-    p.advance()
-    let value = p.tokens[p.i].lexeme.parseInt()
-    result = ASTNode(
-        kind: UnaryOp,
-        unaryOp: op,
-        value: ASTNode(
-            kind: Number,
-            numValue: value
-        )
-    )
-    p.advance()
-]#
-
 proc parseFactor(p: var Parser): ASTNode =
     if p.check(Minus):
         let op = p.peek()
@@ -106,25 +87,24 @@ proc parseExpression(p: var Parser): ASTNode =
         
         left = newBinaryNode(left, right, op)
     
+
+    if not p.expect(Semicolon, "Semicolon expected"):
+        echo "missing semicolon"
+        return nil
+
     return left
 
-proc parse*(p: var Parser): ASTNode =
-    if len(p.tokens) == 0:
-        p.error("Empty input")
-        return nil
-    
-    result = p.parseExpression()
-    
-    # Check for unexpected tokens after the expression
-    if result != nil and p.i < len(p.tokens) and p.peek() != Eof:
-        let unexpectedToken = p.tokens[p.i]
-        p.error(&"Unexpected token at line {unexpectedToken.pos.line}, column {unexpectedToken.pos.column}: '{unexpectedToken.lexeme}'")
-        result = nil
-    
-    if len(p.errors) > 0:
-        result = nil
+proc parse*(p: var Parser): seq[ASTNode] =
+    result = newSeq[ASTNode]()
 
-proc parse*(file: string): ASTNode =
+    while p.i < len(p.tokens) and p.peek() != EOF:
+        let exp = p.parseExpression()
+        if exp == nil:
+            p.error("Failed to parse expression in parse(p) function")
+            return @[]
+        result.add(exp)
+
+proc parse*(file: string): seq[ASTNode] =
     var p = Parser.new(lex(file))
     return parse(p)
 
@@ -194,7 +174,10 @@ when isMainModule:
         #if filepath == "examples\\negative3.kd": continue
         echo filepath
         let node = parse(filepath)
-        dumpAST(node)
-        echo evaluate(node)
+        #dumpAST(node)
+        #echo evaluate(node)
+        
+        for n in node:
+            dumpAST(n)
         
         echo ""

@@ -11,7 +11,7 @@ export function w $main() {
   %t8 =w neg %t7
   %t9 =w sub %t0, %t8
   call $printf(l $fmt, ..., w %t9)
-  ret
+  ret 0
 }
 
 data $fmt = { b "Result = %d\n\0" }

@@ -68,14 +68,20 @@ proc generate*(qg: var QBEGen, node: ASTNode): string =
         qg.error("Cannot generate code for empty node")
         result = "%0"
 
-proc generateProgram*(qg: var QBEGen, ast: ASTNode): string =
+proc generateProgram*(qg: var QBEGen, expressions: seq[ASTNode]): string =
     qg.output = ""
     qg.emit("export function w $main() {")
     qg.emit("@start")
     
-    let res = qg.generate(ast)
-    qg.emit(&"  call $printf(l $fmt, ..., w {res})")
-    qg.emit("  ret")
+
+    for ast in expressions:
+        let res = qg.generate(ast)
+        qg.emit(&"  call $printf(l $fmt, ..., w {res})")
+    #let res = qg.generate(ast)
+#
+    #
+    #qg.emit(&"  call $printf(l $fmt, ..., w {res})")
+    qg.emit("  ret 0")
 
     qg.emit("}")
     qg.emit("")
