@@ -1,5 +1,5 @@
 import lexer, token, ast
-import strutils, strformat
+import std/[strutils, strformat]
 
 type
     Parser = object 
@@ -36,6 +36,7 @@ proc expect(p: var Parser, tt: TokenType, message: string): bool =
         p.error(message)
         return false
 
+#[
 proc parseUnary(p: var Parser): ASTNode =
     if not p.check(Minus):
         p.error("Only a minus sign is supported for unary operations")
@@ -52,17 +53,18 @@ proc parseUnary(p: var Parser): ASTNode =
         )
     )
     p.advance()
+]#
 
-proc parseNumber(p: var Parser): ASTNode =
+proc parseFactor(p: var Parser): ASTNode =
     if p.check(Minus):
         let op = p.peek()
         p.advance()
         
-        let value = p.parseNumber()
-        if value == nil:
+        let operand = p.parseFactor()
+        if operand == nil:
             return nil
         
-        return newUnaryNode(value, op)
+        return newUnaryNode(operand, op)
     
     if not p.check(Number):
         p.error("Expected number")
@@ -72,8 +74,25 @@ proc parseNumber(p: var Parser): ASTNode =
     result = newNumberNode(value)
     p.advance()
 
-proc parseAdd(p: var Parser): ASTNode =
-    var left = p.parseNumber()
+proc parseTerm(p: var Parser): ASTNode =
+    var left = p.parseFactor()
+    if left == nil:
+        return nil
+    
+    while p.check(Star) or p.check(Slash):
+        let op = p.peek()
+        p.advance()
+        
+        let right = p.parseFactor()
+        if right == nil:
+            return nil
+        
+        left = newBinaryNode(left, right, op)
+    
+    return left
+
+proc parseExpression(p: var Parser): ASTNode =
+    var left = p.parseTerm()
     if left == nil:
         return nil
     
@@ -81,19 +100,20 @@ proc parseAdd(p: var Parser): ASTNode =
         let op = p.peek()
         p.advance()
         
-        let right = p.parseNumber()
+        let right = p.parseTerm()
         if right == nil:
             return nil
         
         left = newBinaryNode(left, right, op)
-    return left
     
-proc parse(p: var Parser): ASTNode =
-    if p.i >= len(p.tokens):
-        p.error("Unexpected end of input")
+    return left
+
+proc parse*(p: var Parser): ASTNode =
+    if len(p.tokens) == 0:
+        p.error("Empty input")
         return nil
     
-    result = p.parseAdd()
+    result = p.parseExpression()
     
     # Check for unexpected tokens after the expression
     if result != nil and p.i < len(p.tokens) and p.peek() != Eof:
@@ -102,11 +122,10 @@ proc parse(p: var Parser): ASTNode =
         result = nil
     
     if len(p.errors) > 0:
-        echo p.errors
         result = nil
 
-proc parse*(program: string): ASTNode =
-    var p = Parser.new(lex(program))
+proc parse*(file: string): ASTNode =
+    var p = Parser.new(lex(file))
     return parse(p)
 
 proc dumpAST*(node: ASTNode, indent: int = 0) =
@@ -128,6 +147,8 @@ proc dumpAST*(node: ASTNode, indent: int = 0) =
         let opStr = case node.binaryOp
                     of Plus: "+"
                     of Minus: "-"
+                    of Star: "*"
+                    of Slash: "/"
                     else: "unknown"
         echo prefix & "BinaryOp (" & opStr & ")"
         dumpAST(node.left, indent + 1)
@@ -147,12 +168,18 @@ proc evaluate(node: ASTNode): int =
             result = leftVal + rightVal
         of Minus:
             result = leftVal - rightVal
+        of Star:
+            result = leftVal * rightVal
+        of Slash:
+            assert rightVal != 0, "Division by zero in evaluate"
+            result = leftVal div rightVal
         else:
             # Should not happen with valid AST
             result = 0
     of UnaryOp:
-        if node.unaryOp == Minus:
-            result = -evaluate(node)
+        case node.unaryOp:
+        of Minus:
+            result = -evaluate(node.value)
         else:
             echo &"{node.unaryOp} is not supported"
             result = evaluate(node)
@@ -160,12 +187,14 @@ proc evaluate(node: ASTNode): int =
         result = 0
 
 when isMainModule:
-    let files = @["simple.kd", "minus.kd", "minus-plus.kd"]
-    
-    for file in files:
-        let filepath = "examples/" & file
+    import std/os
+    for _, filepath in walkDir("examples"):
+        #if filepath == "examples\\negative.kd":  continue
+        #if filepath == "examples\\negative2.kd": continue
+        #if filepath == "examples\\negative3.kd": continue
         echo filepath
-        let node = parse(readFile(filepath))
+        let node = parse(filepath)
         dumpAST(node)
         echo evaluate(node)
+        
         echo ""

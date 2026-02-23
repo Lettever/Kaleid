@@ -23,6 +23,13 @@ proc newNumberNode*(value: int): ASTNode =
         numValue: value
     )
 
+proc newUnaryNode*(value: ASTNode, op: TokenType): ASTNode =
+    return ASTNode(
+        kind: UnaryOp,
+        value: value,
+        unaryOp: op
+    )
+
 proc newBinaryNode*(left, right: ASTNode, op: TokenType): ASTNode =
     return ASTNode(
         kind: BinaryOp,
@@ -31,9 +38,3 @@ proc newBinaryNode*(left, right: ASTNode, op: TokenType): ASTNode =
         binaryOp: op
     )
 
-proc newUnaryNode*(value: ASTNode, op: TokenType): ASTNode =
-    return ASTNode(
-        kind: UnaryOp,
-        value: value,
-        unaryOp: op
-    )

@@ -8,9 +8,9 @@ def compile_qbe_file(file):
 	subprocess.call("gcc -o out out.s".split())
 	subprocess.call("rm out.s".split())
 	subprocess.call("./out.exe".split())
-
-files = [os.path.join("out", f) for f in os.listdir("out")]
-print(files)
+	
+folder = "out-qbe"
+files = [os.path.join(folder, f) for f in os.listdir(folder)]
 
 for f in files:
 	compile_qbe_file(f)

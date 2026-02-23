@@ -1,24 +1,29 @@
 import token; export TokenType
 import lexerposition; export advance
-import parseutils, strutils
+import std/[parseutils, strutils, strformat]
 
 type Lexer = object
+    file: string
     src: string
     pos: LexerPosition
 
-proc new(T: type Lexer, src: string): Lexer =
+proc makeErrorMessage(l: Lexer, message: string): string =
+    return &"{l.file}:{l.pos.line}:{l.pos.column} - {message}"
+
+proc new(T: type Lexer, file: string): Lexer =
     return Lexer(
-        src: src,
+        file: file,
+        src: readFile(file),
         pos: LexerPosition.default() 
     )
 
-proc makeAndAdvance(l: var Lexer, kind: TokenType, lexeme: string): Token = 
-    result = Token(
-        kind: kind,
-        lexeme: lexeme,
-        pos: l.pos,
-    )
-    l.pos.advance(len(lexeme))
+proc makeAndAdvance(l: var Lexer, kind: TokenType, str: string): Token = 
+    result = makeToken(kind, str, l.pos)
+    case kind:
+    of Error:
+        l.pos.advance(1)
+    else:
+        l.pos.advance(len(str))
 
 proc nextCh(l: var Lexer, ch: char) =
     l.pos.advance(1)
@@ -33,7 +38,7 @@ proc skipWhiteSpace(l: var Lexer) =
 proc readNumber(l: var Lexer): Token =
     var res: string
     if parseWhile(l.src, res, Digits, l.pos.i) == 0:
-        return l.makeAndAdvance(Error, "")
+        return l.makeAndAdvance(Error, makeErrorMessage(l, "readNumber"))
     return l.makeAndAdvance(Number, res)
 
 proc nextToken(l: var Lexer): Token =
@@ -47,7 +52,11 @@ proc nextToken(l: var Lexer): Token =
         return l.makeAndAdvance(Plus, "+")
     elif ch == '-':
         return l.makeAndAdvance(Minus, "-")
-    return l.makeAndAdvance(Error, ch & "")
+    elif ch == '*':
+        return l.makeAndAdvance(Star, "*")
+    elif ch == '/':
+        return l.makeAndAdvance(Slash, "/")
+    return l.makeAndAdvance(Error, makeErrorMessage(l, &"{ch}"))
 
 proc collect(l: var Lexer): seq[Token] =
     result = newSeq[Token]()
@@ -56,16 +65,14 @@ proc collect(l: var Lexer): seq[Token] =
         result &= t
         t = l.nextToken()
 
-proc lex*(s: string): seq[Token] = 
+proc lex*(s: string): seq[Token] =
     var l = Lexer.new(s)
     return l.collect()
 
 when isMainModule:
-    let files = @["simple.kd", "minus.kd", "minus-plus.kd"]
-    
-    for file in files:
-        let filepath = "examples/" & file
+    import std/os
+    for _, filepath in walkDir("examples"):
         echo filepath
-        for t in lex(readFile(filepath)):
+        for t in lex(filepath):
             echo t
         echo ""

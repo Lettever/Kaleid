@@ -1,5 +1,5 @@
 import ast, token, parser
-import std/[strformat, paths]
+import std/[strformat, paths, os]
 
 #codegen for qbe
 
@@ -22,6 +22,7 @@ proc error(qg: var QBEGen, message: string) =
     qg.errors &= message
     
 proc generateNumber(qg: var QBEGen, node: ASTNode): string = 
+    assert node.kind == Number, "Invalid state on generateNumber, tried to call it when node is not a number"
     result = qg.newTemp()
     qg.emit(&"  {result} =w copy {node.numValue}")
     
@@ -47,6 +48,10 @@ proc generateBinaryOp(qg: var QBEGen, node: ASTNode): string =
         qg.emit(&"  {result} =w add {leftTemp}, {rightTemp}")
     of Minus:
         qg.emit(&"  {result} =w sub {leftTemp}, {rightTemp}")
+    of Star:
+        qg.emit(&"  {result} =w mul {leftTemp}, {rightTemp}")
+    of Slash:
+        qg.emit(&"  {result} =w div {leftTemp}, {rightTemp}")
     else:
         qg.error(&"Unsupported operator: {node.binaryOp}")
         result = leftTemp
@@ -79,15 +84,13 @@ proc generateProgram*(qg: var QBEGen, ast: ASTNode): string =
     return qg.output
 
 when isMainModule:
-    let files = @["simple.kd", "minus.kd", "minus-plus.kd", "negative.kd", "negative2.kd", "negative3.kd"]
-    
-    for file in files:
+    for _, file in walkDir("examples", true):
         let filepath = "examples/" & file
         let outpath = $Path("out-qbe/" & file).changeFileExt("qbe")
         echo filepath
         echo outpath
         var qg = QBEGen.new()
-        let node = parse(readFile(filepath))
+        let node = parse(filepath)
         let output = qg.generateProgram(node)
         writeFile(outpath, output)
         echo output
