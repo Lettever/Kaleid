@@ -10,22 +10,22 @@ type QBEGen* = object
 
 proc new(T: type QBEGen): QBEGen =
     return QBEGen(output: "", tempCounter: 0, errors: newSeq[string]())
-    
+
 proc newTemp(qg: var QBEGen): string =
     result = &"%t{qg.tempCounter}"
     qg.tempCounter += 1
-    
+
 proc emit(qg: var QBEGen, line: string) =
     qg.output &= line & "\n"
-    
-proc error(qg: var QBEGen, message: string) = 
+
+proc error(qg: var QBEGen, message: string) =
     qg.errors &= message
-    
-proc generateNumber(qg: var QBEGen, node: ASTNode): string = 
+
+proc generateNumber(qg: var QBEGen, node: ASTNode): string =
     assert node.kind == Number, "Invalid state on generateNumber, tried to call it when node is not a number"
     result = qg.newTemp()
     qg.emit(&"  {result} =w copy {node.numValue}")
-    
+
 proc generate*(qg: var QBEGen, node: ASTNode): string
 
 proc generateUnaryOp(qg: var QBEGen, node: ASTNode): string =
@@ -36,13 +36,13 @@ proc generateUnaryOp(qg: var QBEGen, node: ASTNode): string =
         qg.emit(&"  {result} =w neg {operand}")
     else:
         qg.error("Cannot generate code for empty node")
-        result = "%0" 
-    
+        result = "%0"
+
 proc generateBinaryOp(qg: var QBEGen, node: ASTNode): string =
     let leftTemp = qg.generate(node.left)
     let rightTemp = qg.generate(node.right)
     result = qg.newTemp()
-    
+
     case node.binaryOp
     of Plus:
         qg.emit(&"  {result} =w add {leftTemp}, {rightTemp}")
@@ -72,7 +72,7 @@ proc generateProgram*(qg: var QBEGen, expressions: seq[ASTNode]): string =
     qg.output = ""
     qg.emit("export function w $main() {")
     qg.emit("@start")
-    
+
 
     for ast in expressions:
         let res = qg.generate(ast)
@@ -86,7 +86,7 @@ proc generateProgram*(qg: var QBEGen, expressions: seq[ASTNode]): string =
     qg.emit("}")
     qg.emit("")
     qg.emit("data $fmt = { b \"Result = %d\\n\\0\" }")
-    
+
     return qg.output
 
 when isMainModule:

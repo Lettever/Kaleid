@@ -1,0 +1,6 @@
+Function like quakeC, ex: int(int min, int max) clamp { body }
+
+Array declaration is like this [3]int, an array of 3 ints
+[7][5]int is an array that has 7 elements and each element is an array of 5 ints
+
+Hashmaps are like array, [string]int is a hashmap where the key is a string and the value is an int
