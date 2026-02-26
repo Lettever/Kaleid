@@ -14,10 +14,10 @@ proc new(T: type Lexer, file: string): Lexer =
     return Lexer(
         file: file,
         src: readFile(file),
-        pos: LexerPosition.default() 
+        pos: LexerPosition.default()
     )
 
-proc makeAndAdvance(l: var Lexer, kind: TokenType, str: string): Token = 
+proc makeAndAdvance(l: var Lexer, kind: TokenType, str: string): Token =
     result = makeToken(kind, str, l.pos)
     case kind:
     of Error:
@@ -38,8 +38,16 @@ proc skipWhiteSpace(l: var Lexer) =
 proc readNumber(l: var Lexer): Token =
     var res: string
     if parseWhile(l.src, res, Digits, l.pos.i) == 0:
-        return l.makeAndAdvance(Error, makeErrorMessage(l, "readNumber"))
+        return l.makeAndAdvance(Error, l.makeErrorMessage("readNumber"))
     return l.makeAndAdvance(Number, res)
+
+proc readIdentifier(l: var Lexer): Token =
+    var res: string
+    if parseIdent(l.src, res, l.pos.i) == 0:
+        return l.makeAndAdvance(Error, l.makeErrorMessage("readIdentifier"))
+
+    let tt = if res == "let": Let else: Identifier
+    return l.makeAndAdvance(tt, res)
 
 proc nextToken(l: var Lexer): Token =
     l.skipWhiteSpace()
@@ -58,7 +66,13 @@ proc nextToken(l: var Lexer): Token =
         return l.makeAndAdvance(Slash, "/")
     elif ch == ';':
         return l.makeAndAdvance(Semicolon, ";")
+    elif ch == '=':
+        return l.makeAndAdvance(Equals, "=")
+    elif ch.isAlphaAscii():
+        return l.readIdentifier()
+    ##Let, Identifier
     return l.makeAndAdvance(Error, makeErrorMessage(l, &"{ch}"))
+
 
 proc collect(l: var Lexer): seq[Token] =
     result = newSeq[Token]()

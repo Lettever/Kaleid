@@ -1,0 +1,17 @@
+data $fmt = { b "Result = %d\n", b 0 }
+
+export function w $main() {
+@start
+  %t0 =w copy 10
+  %s0 =l alloc8 8
+  storew %t0, %s0
+  call $printf(l $fmt, ..., w %t0)
+  %t2 =w loadsw %s0
+  %t3 =w copy 3
+  %t4 =w mul %t2, %t3
+  %t5 =w copy 1
+  %t6 =w add %t4, %t5
+  storew %t6, %s0
+  call $printf(l $fmt, ..., w %t6)
+  ret 0
+}

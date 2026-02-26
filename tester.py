@@ -34,3 +34,5 @@ print(f"{files=}")
 for f in files:
 	compile_qbe_file(f)
 	print("\n\n\n\n")
+
+subprocess.call("rm out".split())

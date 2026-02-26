@@ -1,11 +1,12 @@
 import ast, token, parser
-import std/[strformat, paths, os]
+import std/[strformat, paths, os, tables]
 
 #codegen for qbe
 
 type QBEGen* = object
     output: string
     tempCounter: int
+    variables: Table[string, string]
     errors: seq[string]
 
 proc new(T: type QBEGen): QBEGen =
@@ -15,18 +16,42 @@ proc newTemp(qg: var QBEGen): string =
     result = &"%t{qg.tempCounter}"
     qg.tempCounter += 1
 
+proc newStackSlot(qg: var QBEGen): string =
+    result = &"%s{qg.variables.len()}"
+    qg.tempCounter += 1
+
 proc emit(qg: var QBEGen, line: string) =
     qg.output &= line & "\n"
 
 proc error(qg: var QBEGen, message: string) =
     qg.errors &= message
 
+proc generate(qg: var QBEGen, node: ASTNode): string
+
+proc generateAssignment(qg: var QBEGen, node: ASTNode): string =
+    let value = qg.generate(node.assVal)
+    if not qg.variables.hasKey(node.assName):
+        let slot = qg.newStackSlot()
+        qg.variables[node.assName] = slot
+        qg.emit(&"  {slot} =l alloc8 8")
+
+    let slot = qg.variables[node.assName]
+    qg.emit(&"  storew {value}, {slot}")
+    return value
+
+proc generateVariable(qg: var QBEGen, node: ASTNode): string =
+    if not qg.variables.hasKey(node.name):
+        qg.error(&"Undefined variable: {node.name}")
+        return qg.newTemp()
+
+    let slot = qg.variables[node.name]
+    result = qg.newTemp()
+    qg.emit(&"  {result} =w loadsw {slot}")
+
 proc generateNumber(qg: var QBEGen, node: ASTNode): string =
     assert node.kind == Number, "Invalid state on generateNumber, tried to call it when node is not a number"
     result = qg.newTemp()
     qg.emit(&"  {result} =w copy {node.numValue}")
-
-proc generate*(qg: var QBEGen, node: ASTNode): string
 
 proc generateUnaryOp(qg: var QBEGen, node: ASTNode): string =
     case node.unaryOp
@@ -56,7 +81,7 @@ proc generateBinaryOp(qg: var QBEGen, node: ASTNode): string =
         qg.error(&"Unsupported operator: {node.binaryOp}")
         result = leftTemp
 
-proc generate*(qg: var QBEGen, node: ASTNode): string =
+proc generate(qg: var QBEGen, node: ASTNode): string =
     case node.kind
     of Number:
         result = qg.generateNumber(node)
@@ -64,6 +89,10 @@ proc generate*(qg: var QBEGen, node: ASTNode): string =
         result = qg.generateUnaryOp(node)
     of BinaryOp:
         result = qg.generateBinaryOp(node)
+    of Variable:
+        result = qg.generateVariable(node)
+    of Assignment:
+        result = qg.generateAssignment(node)
     of Empty:
         qg.error("Cannot generate code for empty node")
         result = "%0"
@@ -73,14 +102,10 @@ proc generateProgram*(qg: var QBEGen, expressions: seq[ASTNode]): string =
     qg.emit("export function w $main() {")
     qg.emit("@start")
 
-
     for ast in expressions:
         let res = qg.generate(ast)
         qg.emit(&"  call $printf(l $fmt, ..., w {res})")
-    #let res = qg.generate(ast)
-#
-    #
-    #qg.emit(&"  call $printf(l $fmt, ..., w {res})")
+
     qg.emit("  ret 0")
 
     qg.emit("}")

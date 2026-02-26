@@ -3,7 +3,7 @@ import lexerposition
 type
     TokenType* = enum
         Plus, Star, Number, Minus, Slash, Semicolon
-        Error, Eof
+        Let, Equals, Identifier, Error, Eof
 
     Token* = object
         pos*: LexerPosition
@@ -19,7 +19,6 @@ proc makeToken*(tt: TokenType, str: string, pos: LexerPosition): Token =
         return Token(kind: Error, pos: pos, message: str)
     else:
         return Token(kind: tt, pos: pos, lexeme: str)
-    
+
 when isMainModule:
     echo "hi from token.nim"
-    

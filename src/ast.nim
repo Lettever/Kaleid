@@ -2,7 +2,7 @@ import token
 
 type
     ASTNodeKind* = enum
-        Number, BinaryOp, UnaryOp, Empty
+        Number, BinaryOp, UnaryOp, Variable, Assignment, Empty
 
     ASTNode* = ref object
         case kind*: ASTNodeKind
@@ -14,6 +14,11 @@ type
         of UnaryOp:
             value*: ASTNode
             unaryOp*: TokenType
+        of Variable:
+            name*: string
+        of Assignment:
+            assName*: string
+            assVal*: ASTNode
         of Empty:
             discard
 
@@ -38,3 +43,15 @@ proc newBinaryNode*(left, right: ASTNode, op: TokenType): ASTNode =
         binaryOp: op
     )
 
+proc newVariableNode*(name: string): ASTNode =
+    return ASTNode(
+        kind: Variable,
+        name: name
+    )
+
+proc newAssignmentNode*(name: string, value: ASTNode): ASTNode =
+    return ASTNode(
+        kind: Assignment,
+        assName: name,
+        assVal: value
+    )
